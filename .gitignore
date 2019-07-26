@@ -1,0 +1,11 @@
+*.s
+py2tf.sh
+py3tf.sh
+gan_output/
+data/
+old/
+logs/
+log.pkl
+submit_scripts/
+*.swp
+cred.dat

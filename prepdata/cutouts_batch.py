@@ -212,6 +212,7 @@ def extract_and_rename(submission):
         lines.remove(c)
 
     shutil.rmtree(new_dir)
+    os.remove(f'{submission}.tar.gz')
 
     if len(lines)>0:
         with open(f"{submission}.err.txt", "w") as f:
