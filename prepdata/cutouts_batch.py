@@ -22,42 +22,53 @@ from astropy.coordinates import SkyCoord
 import requests
 from multiprocessing import Pool
 from tqdm import tqdm
+import pandas as pd
 
 from unagi import config
 from unagi import hsc
 from unagi.task import hsc_tricolor, hsc_cutout
 
 
-tag = 'i500k'
-out_dir = f"/scratch/ksf293/kavli/anomaly/images_fits/images_{tag}"
-
+tag = 'r20.0'
 
 def main():
     
-    nsample = 500000
-    filters = ['I']
+    nsample = 'all'
+    #nsample = 30
+    filters = ['R']
     batch_size = int(1000/len(filters))
-    exclude = '../data/imarrs_np/hsc_i60k_96x96_idx.npy'
+    exclude = None
     s_ang = 10 #arcsec
 
     starttime = time.time()
-    if not os.path.isdir(out_dir):
-        os.mkdir(out_dir) 
 
+    gen_scripts = 1
     sub_dir = f"submit_scripts/subs_{tag}" 
-    if os.path.isdir(sub_dir):
+    if os.path.isdir(sub_dir) and os.listdir(sub_dir):
         fns = os.listdir(sub_dir)
-        sub_scripts = [f"{sub_dir}/{fn}" for fn in fns if fn.endswith(".txt")]
-        print(f"Using {len(sub_scripts)} existing submission scripts")  
-    else:
+        sub_scripts = [f"{sub_dir}/{fn}" for fn in fns if fn.endswith(".txt") and "done" not in fn]
+        if sub_scripts:
+            print(f"Using {len(sub_scripts)} existing submission scripts")
+            gen_scripts = 0
+    
+    if gen_scripts:
         print("Generating subsample and submission scripts")
         print("Loading catalog")
-        fn = "../data/pdr2_wide_icmod_21.0_21.5_fdfc_bsm_shape.fits"
-        hdul = fits.open(fn, memmap=True)
-
-        alldata = hdul[1].data
-        indices_sample = get_indices(nsample, len(alldata), exclude=exclude)
-        data = alldata[indices_sample]
+        #fn = "../data/hsc_catalogs/pdr2_wide_icmod_21.0_21.5_fdfc_bsm_shape.fits"
+        fn = "../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5.csv"
+        if fn.endswith(".fits"):
+            hdul = fits.open(fn, memmap=True)
+            alldata = hdul[1].data
+        elif fn.endswith(".csv"):
+            alldata = pd.read_csv(fn)
+        print(f"Full catalog: {len(alldata)} objects")
+        
+        if nsample=='all':
+            data = alldata
+            indices_sample = np.arange(len(data))
+        else:
+            indices_sample = get_indices(nsample, len(alldata), exclude=exclude)
+            data = alldata.iloc[indices_sample]
         data = clean_data(data)
 
         start = 0
@@ -72,7 +83,7 @@ def main():
             if end>=len(data):
                 end = len(data)
                 moredata = 0
-            batch = data[start:end]
+            batch = data.iloc[start:end]
             indices = indices_sample[start:end]
 
             f_name = write_batch_file(batch, indices, s_ang, filters, batch_num)        
@@ -91,9 +102,12 @@ def main():
 
 
 def get_indices(nsample, ntotal, exclude=None):
-    excl = np.load(exclude)
-    #https://stackoverflow.com/questions/3462143/get-difference-between-two-lists
-    incl = list(set(range(ntotal)) - set(excl))
+    if exclude:
+        excl = np.load(exclude)
+        #https://stackoverflow.com/questions/3462143/get-difference-between-two-lists
+        incl = list(set(range(ntotal)) - set(excl))
+    else:
+        incl = ntotal
     indices = np.random.choice(incl, size=nsample, replace=False)
     return indices
 
@@ -117,7 +131,7 @@ def write_batch_file(data, indices, s_ang, filters, batch_num):
     das_header = "#? rerun filter ra dec sw sh # column descriptor\n"
     das_list = []
     for i in range(len(data)):
-        obj = data[i]
+        obj = data.iloc[i]
         ra = obj['ra']
         dec = obj['dec']
         obj_id = obj['object_id']
@@ -181,13 +195,16 @@ def extract_and_rename(submission):
     new_dir = f"{submission[:-4]}_dir"
     if not os.path.isdir(new_dir):
         os.mkdir(new_dir)
-    with tarfile.TarFile(f"{submission}.tar.gz", "r") as tarball:
-        tarball.extractall(new_dir)
+    
+    if os.path.isfile(f"{submission}.tar.gz"):
+        with tarfile.TarFile(f"{submission}.tar.gz", "r") as tarball:
+            tarball.extractall(new_dir)
 
     with open(submission) as f:
         lines = [l.strip().split() for l in f.readlines()[1:]]
 
     # the HSC api names the folder randomly
+    # check if folder empty
     if not os.listdir(new_dir):
         print(f"No downloads for {submission}")
         return   
@@ -195,6 +212,9 @@ def extract_and_rename(submission):
 
     img_dir = os.path.join(new_dir, sub_dir)
     completed = []
+    nparrs = []
+    indices = []
+    # Combine fits files into one numpy array per batch
     for f in sorted(os.listdir(img_dir)):
         row_id = int(f.split("-")[0])
         
@@ -204,15 +224,19 @@ def extract_and_rename(submission):
         obj_idx = obj_details[-1]
         band = obj_details[1].split("-")[1]
 
-        shutil.move(os.path.join(img_dir, f),
-                          os.path.join(out_dir, f"hsc_{obj_id}_{obj_idx}_10x10_{band}.fits"))
+        nparrs.append(unpack(f"{img_dir}/{f}"))
+        indices.append(int(obj_idx))
+
         completed.append(obj_details)
 
     for c in completed:
         lines.remove(c)
 
+    # Remove completed files
     shutil.rmtree(new_dir)
-    os.remove(f'{submission}.tar.gz')
+    if os.path.isfile(f"{submission}.tar.gz"):
+        os.remove(f'{submission}.tar.gz')
+    script_num = submission.split('-')[-1][:-4]
 
     if len(lines)>0:
         with open(f"{submission}.err.txt", "w") as f:
@@ -220,11 +244,34 @@ def extract_and_rename(submission):
             for o in obj_details:
                 f.write(",".join(o) + "\n")
     
+    # Save as numpy arrays and remove fits files
+    npdir = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarrs_{tag}'    
+    if not os.path.isdir(npdir):
+        os.mkdir(npdir)
+    
+    np.save(f'{npdir}/hsc_{tag}_{script_num}.npy', nparrs)
+    np.save(f'{npdir}/hsc_{tag}_{script_num}_idx.npy', indices) 
+
+    os.rename(submission, f"{submission[:-4]}-done.txt")
+
     end = time.time()
     print('Extraction done! Time:',end-start)
     sys.stdout.flush()
 
- 
+
+def unpack(fn):
+    size = 96
+    with fits.open(fn, memmap=False) as hdul:
+        im = hdul[1].data
+    centh = im.shape[0]/2
+    centw = im.shape[1]/2
+    lh, rh = int(centh-size/2), int(centh+size/2)
+    lw, rw = int(centw-size/2), int(centw+size/2)
+    cropped = im[lh:rh, lw:rw]
+    assert cropped.shape[0]==size and cropped.shape[1]==size, f"Wrong size! Still {cropped.shape}"
+    return cropped
+
+
 # Clean sample
 def clean_data(data):
     print("Cleaning data")
@@ -240,8 +287,8 @@ def clean_data(data):
             flag = '{}_{}'.format(bands[b], badflags[i])
             data = data[data[flag]==0]
     #data = data[data['reliable']!=1]
-    print(len(data))
     end = time.time()
+    print(f"Cleaned catalog: {len(data)} objects")
     print('Time clean:',end-start)
     return data 
 

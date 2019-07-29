@@ -1,4 +1,4 @@
-import tflib_py3 as lib
+import tflib as lib
 
 import numpy as np
 import tensorflow as tf

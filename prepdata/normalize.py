@@ -3,12 +3,13 @@ import numpy as np
 
 def main():
     #tag = 'i60k_28x28'
-    tag = 'i60k_96x96'
-    imarr_fn = "imarrs_np/hsc_{}.npy".format(tag)
+    tag = 'i20.0'
+    imarr_fn = "/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{}.npy".format(tag)
+    #imarr_fn = "/home/ksf293/kavli/anomalies-GAN-HSC/data/imarrs_np/hsc_{}.npy".format(tag)
     data = np.load(imarr_fn)
-
+    print(len(data))
     normed = [normalize(d) for d in data]
-    np.save("imarrs_np/hsc_{}_norm.npy".format(tag), normed)
+    np.save("/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{}_norm.npy".format(tag), normed)
 
 def norm0to1(a):
     return (a - np.min(a))/np.ptp(a)

@@ -29,23 +29,24 @@ import tflib.mnist
 import tflib.plot
 import tflib.datautils
 
-import load_images as loader
-
 
 MODE = 'wgan-gp' # dcgan, wgan, or wgan-gp
 DIM = 64 # Model dimensionality
 BATCH_SIZE = 32 # Batch size
 CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
-ITERS = 100 # How many generator iterations to train for
-SAMPLE_ITERS = 10 # Multiples at which to generate image sample
+ITERS = 50000 # How many generator iterations to train for
+SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
+SAVE_ITERS = 10000
 NSIDE = 96 # Don't change this without changing the model layers!
 OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 
-tag = 'i1k_96x96_norm'
-imarr_fn = "imarrs_np/hsc_{}.npy".format(tag)
+#tag = 'i85k_96x96_norm'
+#imarr_fn = "../data/imarrs_np/hsc_{}.npy".format(tag)
+tag = 'i20.0_norm'
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'../gan_output/out_{tag}_test/'
+out_dir = f'../training_output/out_{tag}_iter1k/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -235,6 +236,9 @@ def generate_image(frame, true_dist):
 train_data = lib.datautils.load_numpy(imarr_fn)
 train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE)
 
+# To save model
+saver = tf.train.Saver(max_to_keep=4)
+
 print("Training")
 # Train loop
 with tf.Session() as session:
@@ -275,5 +279,8 @@ with tf.Session() as session:
         if (iteration < 5) or (iteration % SAMPLE_ITERS == 0) \
           or (iteration==ITERS-1):
             lib.plot.flush()
+
+        if (iteration % SAVE_ITERS == 0):
+            saver.save(session, out_dir+'model', global_step=iteration)
 
         lib.plot.tick()

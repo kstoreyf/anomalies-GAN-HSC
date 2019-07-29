@@ -44,7 +44,7 @@ OUTPUT_DIM = 784 # Number of pixels in MNIST (28*28)
 tag = 'i60k_28x28_norm'
 imarr_fn = "imarrs_np/hsc_{}.npy".format(tag)
 
-out_dir = f'../gan_output/out_{tag}_test/'
+out_dir = f'../training_output/out_{tag}_test/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 

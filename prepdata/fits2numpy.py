@@ -6,26 +6,36 @@ from astropy.io import fits
 
 ### Only works for one band right now! Does not combine them yet
 
-tag = 'i60k'
-image_dir = f"images_fits/images_{tag}"
-out_tag = '_96x96'
+fits_tag = 'i20.0'
+image_dir = f"/scratch/ksf293/kavli/anomaly/data/images_fits/images_{fits_tag}"
+out_tag = 'i20.0_800k'
 size = 96
 
 def main():
     
-    npdir = 'imarrs_np'
+    npdir = '/scratch/ksf293/kavli/anomaly/data/imarrs_np'
     if not os.path.isdir(npdir):
         os.mkdir(npdir)
 
+    #add_dir = f"/scratch/ksf293/kavli/anomaly/imarrs_np"
+    #add_tag = "i60k_96x96"
+    add_tag = None
+
     nparrs = [unpack(fn) for fn in os.listdir(image_dir)]
     indices = [get_idx(fn) for fn in os.listdir(image_dir)]
-    np.save(f'{npdir}/hsc_{tag}{out_tag}.npy', nparrs)
-    np.save(f'{npdir}/hsc_{tag}{out_tag}_idx.npy', indices)
+
+    if add_tag:
+        nparrs_add = np.load(f"{add_dir}/hsc_{add_tag}.npy")
+        indices_add = np.load(f"{add_dir}/hsc_{add_tag}_idx.npy")
+        print("Concatenating lists")
+        nparrs = np.concatenate((nparrs, nparrs_add))
+        indices = np.concatenate((indices, indices_add))
+
+    np.save(f'{npdir}/hsc_{out_tag}.npy', nparrs)
+    np.save(f'{npdir}/hsc_{out_tag}_idx.npy', indices)
 
 
 def unpack(fn):
-    #im = fits.getdata(f"{image_dir}/{fn}", 1)
-    #print(im.shape)
     with fits.open(f"{image_dir}/{fn}", memmap=False) as hdul:
         im = hdul[1].data
     centh = im.shape[0]/2
