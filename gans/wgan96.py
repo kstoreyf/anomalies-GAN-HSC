@@ -37,7 +37,7 @@ CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
 ITERS = 50000 # How many generator iterations to train for
 SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
-SAVE_ITERS = 10000
+SAVE_ITERS = 2500
 NSIDE = 96 # Don't change this without changing the model layers!
 OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 
@@ -46,7 +46,7 @@ OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 tag = 'i20.0_norm'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'../training_output/out_{tag}_iter1k/'
+out_dir = f'../training_output/out_{tag}_noise/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -75,6 +75,11 @@ def LeakyReLULayer(name, n_in, n_out, inputs):
     )
     return LeakyReLU(output)
 
+def gaussian_noise_layer(input_layer, std):
+    noise = tf.random_normal(shape=tf.shape(input_layer), mean=0.0, stddev=std,
+                             dtype=tf.float32) 
+    return input_layer + noise
+
 def Generator(n_samples, noise=None):
     if noise is None:
         noise = tf.random_normal([n_samples, 128])
@@ -95,6 +100,8 @@ def Generator(n_samples, noise=None):
     if MODE == 'wgan':
         output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,2,3], output)
     output = tf.nn.relu(output)
+
+    output = gaussian_noise_layer(output, 0.1)
 
     output = lib.ops.deconv2d.Deconv2D('Generator.3', 2*DIM, DIM, 5, output)
     if MODE == 'wgan':
@@ -133,6 +140,8 @@ def Discriminator(inputs):
     output = lib.ops.linear.Linear('Discriminator.Output', 8*6*6*DIM, 1, output)
 
     return tf.reshape(output, [-1])
+
+
 
 print("Setting up models")
 real_data = tf.placeholder(tf.float32, shape=[BATCH_SIZE, OUTPUT_DIM])
@@ -237,7 +246,8 @@ train_data = lib.datautils.load_numpy(imarr_fn)
 train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE)
 
 # To save model
-saver = tf.train.Saver(max_to_keep=4)
+#saver = tf.train.Saver(max_to_keep=4)
+saver = tf.train.Saver()
 
 print("Training")
 # Train loop
@@ -274,6 +284,7 @@ with tf.Session() as session:
         if (iteration % SAMPLE_ITERS) == 0 or (iteration==ITERS-1):
 
             generate_image(iteration, _data)
+    
 
         # Write logs every 100 iters
         if (iteration < 5) or (iteration % SAMPLE_ITERS == 0) \

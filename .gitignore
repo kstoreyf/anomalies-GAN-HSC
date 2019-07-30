@@ -9,3 +9,5 @@ log.pkl
 submit_scripts/
 *.swp
 cred.dat
+thumbnails/
+training_output/
