@@ -36,9 +36,9 @@ DIM = 64 # Model dimensionality
 BATCH_SIZE = 32 # Batch size
 CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
-ITERS = 10000 # How many generator iterations to train for
-SAMPLE_ITERS = 100 # Multiples at which to generate image sample
-SAVE_ITERS = 500
+ITERS = 30000 # How many generator iterations to train for
+SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
+SAVE_ITERS = 1000
 NSIDE = 96 # Don't change this without changing the model layers!
 OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 
@@ -165,7 +165,8 @@ fake_data = Generator(noise)
 disc_real = Discriminator(real_data)
 disc_fake = Discriminator(fake_data)
 
-gen_params = lib.params_with_name('Generator')
+#gen_params = lib.params_with_name('Generator')
+gen_params = [v for v in tf.trainable_variables() if 'Generator' in v.name]
 disc_params = lib.params_with_name('Discriminator')
 
 if MODE == 'wgan':
@@ -205,13 +206,15 @@ elif MODE == 'wgan-gp':
     slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
     gradient_penalty = tf.reduce_mean((slopes-1.)**2)
     disc_cost += LAMBDA*gradient_penalty
-
+    print('gen_params')
+    print(gen_params)
+    
     gen_train_op = tf.train.AdamOptimizer(
         learning_rate=1e-4, #1e-4,
         beta1=0.5,
         beta2=0.9
-    ).minimize(gen_cost)
-    #).minimize(gen_cost, var_list=gen_params)
+    #).minimize(gen_cost)
+    ).minimize(gen_cost, var_list=gen_params)
     disc_train_op = tf.train.AdamOptimizer(
         learning_rate=1e-4, #1e-4,
         beta1=0.5,
@@ -266,12 +269,19 @@ train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE)
 #saver = tf.train.Saver(max_to_keep=4)
 #saver = tf.train.Saver()
 
+
 print("Training")
 # Train loop
 with tf.Session() as session:
 
     #session.run(tf.initialize_all_variables())
     session.run(tf.global_variables_initializer())
+
+    tvars = tf.trainable_variables()
+    tvars_vals = session.run(tvars)
+
+    for var, val in zip(tvars, tvars_vals):
+        print(var.name)
 
     for iteration in range(ITERS):
         start_time = time.time()
@@ -290,8 +300,8 @@ with tf.Session() as session:
         for i in range(disc_iters):
             _data, _ = train_gen.next()
             #_noise = tf.random_normal([BATCH_SIZE, 128])
-            if iteration == 0:
-                _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
+            #if iteration == 0:
+            _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
             
             _disc_cost, _ = session.run(
                 [disc_cost, disc_train_op],
@@ -319,6 +329,6 @@ with tf.Session() as session:
 
         if (iteration % SAVE_ITERS == 0) and iteration>0:
             #saver.save(session, out_dir+'model', global_step=iteration)
-            Generator.export(out_dir+f'gen-{iteration}', session)
+            Generator.export(out_dir+f'model-gen-{iteration}', session)
 
         lib.plot.tick()
