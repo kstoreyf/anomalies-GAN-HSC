@@ -36,9 +36,9 @@ DIM = 64 # Model dimensionality
 BATCH_SIZE = 32 # Batch size
 CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
-ITERS = 30000 # How many generator iterations to train for
-SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
-SAVE_ITERS = 1000
+ITERS = 15000 # How many generator iterations to train for
+SAMPLE_ITERS = 200 # Multiples at which to generate image sample
+SAVE_ITERS = 200
 NSIDE = 96 # Don't change this without changing the model layers!
 OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 
@@ -47,7 +47,7 @@ OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 tag = 'i20.0_norm'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'../training_output/out_{tag}_hub/'
+out_dir = f'../training_output/out_{tag}_feat/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -124,7 +124,9 @@ def Generator_module():
     hub.add_signature(inputs=noise, outputs=output)
     return output
 
-def Discriminator(inputs):
+#def Discriminator(inputs):
+def Discriminator_module():
+    inputs = tf.placeholder(tf.float32, shape=[None, OUTPUT_DIM])
     output = tf.reshape(inputs, [-1, 1, 96, 96])
 
     output = lib.ops.conv2d.Conv2D('Discriminator.1',1,DIM,5,output,stride=2)
@@ -145,11 +147,16 @@ def Discriminator(inputs):
     if MODE == 'wgan':
         output = lib.ops.batchnorm.Batchnorm('Discriminator.BN4', [0,2,3], output)
     output = LeakyReLU(output)
+    
+    hub.add_signature(inputs=inputs, outputs=output, name='feature_match')
 
     output = tf.reshape(output, [-1, 8*6*6*DIM])
     output = lib.ops.linear.Linear('Discriminator.Output', 8*6*6*DIM, 1, output)
 
-    return tf.reshape(output, [-1])
+    tf.reshape(output, [-1])
+
+    hub.add_signature(inputs=inputs, outputs=output)
+    return output
 
 
 print("Setting up models")
@@ -159,6 +166,9 @@ real_data = tf.placeholder(tf.float32, shape=[BATCH_SIZE, OUTPUT_DIM])
 generator_spec = hub.create_module_spec(Generator_module)
 Generator = hub.Module(generator_spec, name='Generator', trainable=True)
 
+discriminator_spec = hub.create_module_spec(Discriminator_module)
+Discriminator = hub.Module(discriminator_spec, name='Discriminator', trainable=True)
+
 noise = tf.placeholder(tf.float32, shape=[BATCH_SIZE, 128])
 fake_data = Generator(noise)
 
@@ -167,7 +177,8 @@ disc_fake = Discriminator(fake_data)
 
 #gen_params = lib.params_with_name('Generator')
 gen_params = [v for v in tf.trainable_variables() if 'Generator' in v.name]
-disc_params = lib.params_with_name('Discriminator')
+#disc_params = lib.params_with_name('Discriminator')
+disc_params = [v for v in tf.trainable_variables() if 'Discriminator' in v.name]
 
 if MODE == 'wgan':
     gen_cost = -tf.reduce_mean(disc_fake)
@@ -206,14 +217,11 @@ elif MODE == 'wgan-gp':
     slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
     gradient_penalty = tf.reduce_mean((slopes-1.)**2)
     disc_cost += LAMBDA*gradient_penalty
-    print('gen_params')
-    print(gen_params)
     
     gen_train_op = tf.train.AdamOptimizer(
         learning_rate=1e-4, #1e-4,
         beta1=0.5,
         beta2=0.9
-    #).minimize(gen_cost)
     ).minimize(gen_cost, var_list=gen_params)
     disc_train_op = tf.train.AdamOptimizer(
         learning_rate=1e-4, #1e-4,
@@ -287,7 +295,6 @@ with tf.Session() as session:
         start_time = time.time()
 
         if iteration > 0:
-            #_noise = tf.random_normal([BATCH_SIZE, 128])
             _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
             _gen_cost, _ = session.run(
                 [gen_cost, gen_train_op],
@@ -299,8 +306,6 @@ with tf.Session() as session:
             disc_iters = CRITIC_ITERS
         for i in range(disc_iters):
             _data, _ = train_gen.next()
-            #_noise = tf.random_normal([BATCH_SIZE, 128])
-            #if iteration == 0:
             _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
             
             _disc_cost, _ = session.run(
@@ -328,7 +333,6 @@ with tf.Session() as session:
             lib.plot.flush()
 
         if (iteration % SAVE_ITERS == 0) and iteration>0:
-            #saver.save(session, out_dir+'model', global_step=iteration)
             Generator.export(out_dir+f'model-gen-{iteration}', session)
-
+            Discriminator.export(out_dir+f'model-disc-{iteration}', session)
         lib.plot.tick()
