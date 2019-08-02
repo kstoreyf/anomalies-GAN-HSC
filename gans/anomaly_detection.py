@@ -1,9 +1,10 @@
 # **************************************************
-# * File Name : residuals.py
+# * File Name : anomaly_detection.py
 # * Creation Date : 2019-07-26
-# * Last Modified :
-# * Created By : 
-# * Description :
+# * Created By : kstoreyf
+# * Description : Trains a mini-NN to find closest 
+#       GAN representation of the image, and assigns
+#       anomaly scores based on this.
 # **************************************************
 
 import os, sys
@@ -29,9 +30,11 @@ import tflib.datautils
 
 
 
-tag = 'i20.0_norm'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
-savetag = '_featcpu'
+#tag = 'i20.0_norm_100k'
+tag = 'i1k_96x96_norm'
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/imarrs_np/hsc_{tag}.npy'
+#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
+savetag = '_cpu'
 mode = 'detector'
 #mode = 'simple'
 
@@ -49,6 +52,12 @@ DIM = 64
 NSIDE = 96
 OUTPUT_DIM = NSIDE*NSIDE
 
+
+
+
+print("Loading data")
+data = lib.datautils.load_numpy(imarr_fn)
+data_gen = lib.datautils.DataGenerator(data)
 print(f"Running anomaly detection for {tag} with generator {gentag}")
 
 print("Loading generator and discriminator")
@@ -57,9 +66,10 @@ Discriminator = hub.Module(disc_fn)
 print("Loaded")
 
 def Detector(z):
-    output = lib.ops.linear.Linear('Detector.0', 128, DIM, z)
+    #output = lib.ops.linear.Linear('Detector.0', 128, DIM, z)
+    output = lib.ops.linear.Linear('Detector.0', 128, 128, z)
     output = tf.nn.relu(output)
-    output = lib.ops.linear.Linear('Detector.1', DIM, 128, output)
+    #output = lib.ops.linear.Linear('Detector.1', DIM, 128, output)
     return output
 
 print("Setting up model")
@@ -93,25 +103,28 @@ optimizer = tf.train.AdamOptimizer(
         beta2=0.9
     ).minimize(anomaly_score, var_list=params)
 
-print("Loading data")
-data = lib.datautils.load_numpy(imarr_fn)
-data_gen = lib.datautils.DataGenerator(data)
 
-data_idxs = [8227, 23384, 27990, 51660, 53654, 75000, 77166, 79478, 136646, 154749, 168076, 169037, 205029, 222372, 230340, 233239, 306282, 371503, 391733, 393979, 403224, 430453, 458481, 537727, 544052, 595328, 646272, 696868, 716897, 786702, 826764, 837307]
+data_idxs = np.random.choice(len(data), size=32)
+#data_idxs = [8227, 23384, 27990, 51660, 53654, 75000, 77166, 79478, 136646, 154749, 168076, 169037, 205029, 222372, 230340, 233239, 306282, 371503, 391733, 393979, 403224, 430453, 458481, 537727, 544052, 595328, 646272, 696868, 716897, 786702, 826764, 837307]
 data = data[data_idxs]
 print(f'Num to detect: {len(data)}')
 results = []
-with tf.Session() as sess:
-    
+#config = tf.ConfigProto()
+#config.gpu_options.allow_growth=True
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+config=tf.ConfigProto(gpu_options=gpu_options)
+
+with tf.Session(config=config) as sess:
+#with tf.Session() as sess:         
     sess.run(tf.global_variables_initializer())
     start = time.time()
-    for i in range(len(data)): 
-
+    for i in range(len(data)):
+        s0 = time.time()
         #_image, _ = data_gen.next_one()
         _image = data[i]
         _noise = np.random.normal(size=(1, 128)).astype('float32')
-        
-        for j in range(100):
+        print(i) 
+        for j in range(50):
             if mode=='simple':
                 feed_dict = {real: _image.reshape(1, OUTPUT_DIM)}
             if mode=='detector':
@@ -119,6 +132,8 @@ with tf.Session() as sess:
             _residual, _feature_residual, _score, _reconstructed, _ = sess.run([residual, feature_residual, anomaly_score, reconstructed, optimizer],
                                                     feed_dict=feed_dict)
 
+        e0 = time.time()
+        print(f'time iter: {e0-s0}')
         results.append([_image, _reconstructed, _residual, _feature_residual, _score, data_idxs[i]])
         if (i==len(data)-1) and i>0:
             print(i, _residual)
