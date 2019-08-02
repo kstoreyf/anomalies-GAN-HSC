@@ -36,7 +36,7 @@ DIM = 64 # Model dimensionality
 BATCH_SIZE = 32 # Batch size
 CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
-ITERS = 15000 # How many generator iterations to train for
+ITERS = 16000 # How many generator iterations to train for
 SAMPLE_ITERS = 200 # Multiples at which to generate image sample
 SAVE_ITERS = 200
 NSIDE = 96 # Don't change this without changing the model layers!
@@ -47,7 +47,7 @@ OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 tag = 'i20.0_norm'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'../training_output/out_{tag}_feat/'
+out_dir = f'../training_output/out_{tag}_features/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -273,16 +273,11 @@ def generate_image(frame, true_dist):
 train_data = lib.datautils.load_numpy(imarr_fn)
 train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE)
 
-# To save model
-#saver = tf.train.Saver(max_to_keep=4)
-#saver = tf.train.Saver()
-
 
 print("Training")
 # Train loop
 with tf.Session() as session:
 
-    #session.run(tf.initialize_all_variables())
     session.run(tf.global_variables_initializer())
 
     tvars = tf.trainable_variables()
