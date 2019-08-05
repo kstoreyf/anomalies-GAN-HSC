@@ -6,6 +6,7 @@
 #       - plot_comparisons to plot pairs of generated
 #               images and their originals
 #       - plot_dist to plot distribution of anomaly scores
+#       - plot_anoms: plot batch of top anomalous images
 # ********************************************************
 import os
 import sys

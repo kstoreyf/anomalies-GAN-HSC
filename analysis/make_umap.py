@@ -1,9 +1,8 @@
 # **************************************************
-# * File Name : umap.py
+# * File Name : make_umap.py
 # * Creation Date : 2019-08-02
-# * Last Modified :
-# * Created By : 
-# * Description :
+# * Created By : kstoreyf
+# * Description : Generates a UMAP of the given data.
 # **************************************************
 
 import matplotlib
