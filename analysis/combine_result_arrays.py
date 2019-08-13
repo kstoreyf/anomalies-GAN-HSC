@@ -10,6 +10,7 @@ import os
 import numpy as np
 
 tag = 'i20.0_norm_features0.05go'
+#tag = 'i20.0_norm_100k_features0.05go'
 res_dir = f'/scratch/ksf293/kavli/anomaly/results/results_{tag}'
 savetag = '_scores'
 save_fn = f'/scratch/ksf293/kavli/anomaly/results/results_{tag}{savetag}.npy'
