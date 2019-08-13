@@ -31,19 +31,20 @@ import tflib.datautils
 
 
 #tag = 'i20.0_norm_100k'
-tag = 'i1k_96x96_norm'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/imarrs_np/hsc_{tag}.npy'
-#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
-savetag = '_cpu'
-mode = 'detector'
-#mode = 'simple'
+tag = 'i20.0_norm'
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
+#tag = 'i1k_96x96_norm'
+#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/imarrs_np/hsc_{tag}.npy'
+savetag = '_simple40lr1e-1_2'
+#mode = 'detector'
+mode = 'simple'
 
-gentag = 'i20.0_norm_hub'
-gennum = 7000
+gentag = 'i20.0_norm_features'
+gennum = 12000
 gen_fn = f'/home/ksf293/kavli/anomalies-GAN-HSC/training_output/out_{gentag}/model-gen-{gennum}'
 
-disctag = 'i20.0_norm_feat'
-discnum = 600
+disctag = gentag
+discnum = gennum
 disc_fn = f'/home/ksf293/kavli/anomalies-GAN-HSC/training_output/out_{disctag}/model-disc-{discnum}'
 
 results_fn = f'/home/ksf293/kavli/anomalies-GAN-HSC/results/results_{tag}{savetag}.npy'
@@ -51,8 +52,6 @@ results_fn = f'/home/ksf293/kavli/anomalies-GAN-HSC/results/results_{tag}{saveta
 DIM = 64
 NSIDE = 96
 OUTPUT_DIM = NSIDE*NSIDE
-
-
 
 
 print("Loading data")
@@ -66,10 +65,10 @@ Discriminator = hub.Module(disc_fn)
 print("Loaded")
 
 def Detector(z):
-    #output = lib.ops.linear.Linear('Detector.0', 128, DIM, z)
-    output = lib.ops.linear.Linear('Detector.0', 128, 128, z)
-    output = tf.nn.relu(output)
-    #output = lib.ops.linear.Linear('Detector.1', DIM, 128, output)
+    output = lib.ops.linear.Linear('Detector.0', 128, DIM, z)
+    #output = lib.ops.linear.Linear('Detector.0', 128, 128, z)
+    #output = tf.nn.relu(output)
+    output = lib.ops.linear.Linear('Detector.1', DIM, 128, output)
     return output
 
 print("Setting up model")
@@ -98,20 +97,20 @@ t_vars = tf.trainable_variables()
 params = [var for var in t_vars if 'Detector' in var.name]
 
 optimizer = tf.train.AdamOptimizer(
-        learning_rate=1e-3, #1e-4,
+        learning_rate=1e-1, #1e-4,
         beta1=0.4,
         beta2=0.9
     ).minimize(anomaly_score, var_list=params)
 
 
-data_idxs = np.random.choice(len(data), size=32)
-#data_idxs = [8227, 23384, 27990, 51660, 53654, 75000, 77166, 79478, 136646, 154749, 168076, 169037, 205029, 222372, 230340, 233239, 306282, 371503, 391733, 393979, 403224, 430453, 458481, 537727, 544052, 595328, 646272, 696868, 716897, 786702, 826764, 837307]
+#data_idxs = np.random.choice(len(data), size=32)
+data_idxs = [8227, 23384, 27990, 51660, 53654, 75000, 77166, 79478, 136646, 154749, 168076, 169037, 205029, 222372, 230340, 233239, 306282, 371503, 391733, 393979, 403224, 430453, 458481, 537727, 544052, 595328, 646272, 696868, 716897, 786702, 826764, 837307]
 data = data[data_idxs]
 print(f'Num to detect: {len(data)}')
 results = []
 #config = tf.ConfigProto()
 #config.gpu_options.allow_growth=True
-gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=1)
 config=tf.ConfigProto(gpu_options=gpu_options)
 
 with tf.Session(config=config) as sess:
@@ -124,7 +123,7 @@ with tf.Session(config=config) as sess:
         _image = data[i]
         _noise = np.random.normal(size=(1, 128)).astype('float32')
         print(i) 
-        for j in range(50):
+        for j in range(40):
             if mode=='simple':
                 feed_dict = {real: _image.reshape(1, OUTPUT_DIM)}
             if mode=='detector':

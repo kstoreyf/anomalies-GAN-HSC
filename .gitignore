@@ -11,3 +11,6 @@ submit_scripts/
 cred.dat
 thumbnails/
 training_output/
+plots/
+*.pyc
+tflib_nohub/

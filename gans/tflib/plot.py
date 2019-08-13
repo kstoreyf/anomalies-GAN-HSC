@@ -22,7 +22,7 @@ def flush():
 	prints = []
 
 	for name, vals in list(_since_last_flush.items()):
-		prints.append("{}\t{:.3f}".format(name.split('/')[-1], np.mean(list(vals.values()))))
+		prints.append("{}\t{:.5f}".format(name.split('/')[-1], np.mean(list(vals.values()))))
 		_since_beginning[name].update(vals)
 
 		x_vals = np.sort(list(_since_beginning[name].keys()))

@@ -1,9 +1,9 @@
 # *********************************************************************************
-# * File Name : wganhub.py
-# * Creation Date : 2019-07-26
+# * File Name : wganrgb.py
+# * Creation Date : 2019-08-12
 # * Created By : kstoreyf
 # * Description : Implemtation of a WGAN-GP to generate 
-# *     images from 96x96 galaxy cutouts. Based on
+# *     images from 96x96 galaxy cutouts, in 3 bands. Based on
 # *     https://github.com/igul222/improved_wgan_training/blob/master/gan_mnist.py.
 # *     Only tested on wgan-gp mode. Uses tensorflow-hub for saving models.
 # *********************************************************************************
@@ -30,24 +30,26 @@ import tflib.mnist
 import tflib.plot
 import tflib.datautils
 
+#np.set_printoptions(threshold=sys.maxsize)
 
 MODE = 'wgan-gp' # dcgan, wgan, or wgan-gp
 DIM = 64 # Model dimensionality
 BATCH_SIZE = 32 # Batch size
 CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
-ITERS = 20000 # How many generator iterations to train for
-SAMPLE_ITERS = 10 # Multiples at which to generate image sample
-SAVE_ITERS = 1000
+ITERS = 50000 # How many generator iterations to train for
+SAMPLE_ITERS = 100 # Multiples at which to generate image sample
+SAVE_ITERS = ITERS
 NSIDE = 96 # Don't change this without changing the model layers!
-OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
+NBANDS = 3
+OUTPUT_DIM = NSIDE*NSIDE*NBANDS # Number of pixels in MNIST (28*28)
 
-#tag = 'i85k_96x96_norm'
-#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/imarrs_np/hsc_{tag}.npy'
-tag = 'i20.0_norm'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
+tag = 'gri'
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+#tag = 'i20.0_norm'
+#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'../training_output/out_{tag}_test2/'
+out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/out_{tag}_red/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -108,7 +110,7 @@ def Generator_module():
         output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0,2,3], output)
     output = tf.nn.relu(output)
     
-    output = lib.ops.deconv2d.Deconv2D('Generator.5', DIM, 1, 5, output)
+    output = lib.ops.deconv2d.Deconv2D('Generator.5', DIM, NBANDS, 5, output)
     
     output = tf.nn.sigmoid(output)
 
@@ -119,9 +121,9 @@ def Generator_module():
 
 def Discriminator_module():
     inputs = tf.placeholder(tf.float32, shape=[None, OUTPUT_DIM])
-    output = tf.reshape(inputs, [-1, 1, 96, 96])
+    output = tf.reshape(inputs, [-1, NBANDS, NSIDE, NSIDE])
 
-    output = lib.ops.conv2d.Conv2D('Discriminator.1',1,DIM,5,output,stride=2)
+    output = lib.ops.conv2d.Conv2D('Discriminator.1',NBANDS,DIM,5,output,stride=2)
     output = LeakyReLU(output)
 
     output = lib.ops.conv2d.Conv2D('Discriminator.2', DIM, 2*DIM, 5, output, stride=2)
@@ -249,17 +251,25 @@ elif MODE == 'dcgan':
 # For saving samples
 fixed_noise = tf.constant(np.random.normal(size=(128, 128)).astype('float32'))
 fixed_noise_samples = Generator(fixed_noise)
-def generate_image(frame, true_dist):
+def generate_image(frame):
     samples = session.run(fixed_noise_samples)
+    samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1) #0321 also works
+    #samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,1,3,2)
+    #print(samples[0])
     lib.save_images.save_images(
-        samples.reshape((128, NSIDE, NSIDE)),
-        out_dir+'samples_{}.png'.format(frame)
+        samples, out_dir+'samples_{}.png'.format(frame), unnormalize=True
     )
 
 # Dataset iterator
-train_data = lib.datautils.load_numpy(imarr_fn)
-train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE)
+print("Loading data")
+train_data = lib.datautils.load(imarr_fn)
+train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=True)
 
+print("Writing real sample")
+sample_real, _ = train_gen.sample(128)
+sample_real = sample_real.reshape((128, NSIDE, NSIDE, NBANDS))
+lib.save_images.save_images(sample_real, out_dir+'real.png', unnormalize=True)
+#print(sample_real[0])
 
 print("Training")
 # Train loop
@@ -281,10 +291,7 @@ with tf.Session() as session:
         else:
             disc_iters = CRITIC_ITERS
         for i in range(disc_iters):
-            #ss = time.time()
             _data, _ = train_gen.next()
-            #ee = time.time()
-            #print(f"tdata: {ee-ss}")
             _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
             
             _disc_cost, _ = session.run(
@@ -302,10 +309,9 @@ with tf.Session() as session:
 
         # Calculate dev loss and generate samples every 100 iters
         if (iteration % SAMPLE_ITERS) == 0 or (iteration==ITERS-1):
-            generate_image(iteration, _data)
+            generate_image(iteration)
 
         # Write logs every 100 iters
-        print(iteration)
         if (iteration < 5) or (iteration % SAMPLE_ITERS == 0) \
           or (iteration==ITERS-1):
             lib.plot.flush()

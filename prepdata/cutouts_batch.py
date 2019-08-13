@@ -29,13 +29,13 @@ from unagi import hsc
 from unagi.task import hsc_tricolor, hsc_cutout
 
 
-tag = 'r20.0'
+tag = 'i20.0_batch'
 
 def main():
     
     nsample = 'all'
     #nsample = 30
-    filters = ['R']
+    filters = ['I']
     batch_size = int(1000/len(filters))
     exclude = None
     s_ang = 10 #arcsec
@@ -62,14 +62,13 @@ def main():
         elif fn.endswith(".csv"):
             alldata = pd.read_csv(fn)
         print(f"Full catalog: {len(alldata)} objects")
-        
+
+        data = clean_data(alldata)        
         if nsample=='all':
-            data = alldata
             indices_sample = np.arange(len(data))
         else:
-            indices_sample = get_indices(nsample, len(alldata), exclude=exclude)
-            data = alldata.iloc[indices_sample]
-        data = clean_data(data)
+            indices_sample = get_indices(nsample, len(data), exclude=exclude)
+            data = data.iloc[indices_sample]
 
         start = 0
         end = batch_size

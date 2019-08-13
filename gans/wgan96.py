@@ -36,8 +36,8 @@ BATCH_SIZE = 32 # Batch size
 CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
 ITERS = 50000 # How many generator iterations to train for
-SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
-SAVE_ITERS = 2500
+SAMPLE_ITERS = 100 # Multiples at which to generate image sample
+SAVE_ITERS = 50000
 NSIDE = 96 # Don't change this without changing the model layers!
 OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 
@@ -46,7 +46,7 @@ OUTPUT_DIM = NSIDE*NSIDE # Number of pixels in MNIST (28*28)
 tag = 'i20.0_norm'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'../training_output/out_{tag}_noise/'
+out_dir = f'../training_output/out_{tag}_check/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -112,7 +112,8 @@ def Generator(n_samples, noise=None):
     
     output = tf.nn.sigmoid(output)
 
-    return tf.reshape(output, [-1, OUTPUT_DIM])
+    output = tf.reshape(output, [-1, OUTPUT_DIM])
+    return output
 
 def Discriminator(inputs):
     output = tf.reshape(inputs, [-1, 1, 96, 96])
@@ -247,7 +248,7 @@ train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE)
 
 # To save model
 #saver = tf.train.Saver(max_to_keep=4)
-saver = tf.train.Saver()
+#saver = tf.train.Saver()
 
 print("Training")
 # Train loop
@@ -291,7 +292,7 @@ with tf.Session() as session:
           or (iteration==ITERS-1):
             lib.plot.flush()
 
-        if (iteration % SAVE_ITERS == 0):
-            saver.save(session, out_dir+'model', global_step=iteration)
+        #if (iteration % SAVE_ITERS == 0):
+        #    saver.save(session, out_dir+'model', global_step=iteration)
 
         lib.plot.tick()
