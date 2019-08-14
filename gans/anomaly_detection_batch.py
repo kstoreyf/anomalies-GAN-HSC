@@ -37,11 +37,12 @@ BATCH_SIZE = 1000
 #BATCH_SIZE = 1
 ITERS = 10
 
-#tag = 'i20.0_norm_100k'
-tag = 'i20.0_norm'
+tag = 'i20.0_norm_100k'
+#tag = 'i20.0_norm'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
-savetag = '_features0.05go'
-startcount = 942
+savetag = '_features0.05go_check'
+#startcount = 942
+startcount = 0
 
 gentag = 'i20.0_norm_features'
 gennum = 12000
@@ -58,7 +59,7 @@ enc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/encoder_{enctag}/model-
 results_dir = f'/scratch/ksf293/kavli/anomaly/results/results_{tag}{savetag}'
 if not os.path.isdir(results_dir):
     os.mkdir(results_dir)
-#result_fn = f'{results_dir}/results_{tag}{savetag}.npy'
+result_fn = f'{results_dir}/results_{tag}{savetag}.npy'
 
 print(f"Running anomaly detection for {tag} with generator {gentag}")
 
@@ -100,6 +101,7 @@ optimizer = tf.train.AdamOptimizer(
 
 print("Loading data")
 data = lib.datautils.load_numpy(imarr_fn)
+data = data[:1000]
 idxs = range(len(data))
 
 #idxs = [8227, 23384, 27990, 51660, 53654, 75000, 77166, 79478, 136646, 154749, 168076, 169037, 205029, 222372, 230340, 233239, 306282, 371503, 391733, 393979, 403224, 430453, 458481, 537727, 544052, 595328, 646272, 696868, 716897, 786702, 826764, 837307]
@@ -111,7 +113,7 @@ print(f'Num to detect: {len(data)}')
 #sess.run(tf.global_variables_initializer())
     
 start = time.time()
-    
+result = []
 moredata = 1
 count = startcount
 loc = startcount*BATCH_SIZE
@@ -121,7 +123,8 @@ while moredata:
         print(f'Batch {count}')
         _images = data[loc:loc+BATCH_SIZE].reshape((-1, OUTPUT_DIM))
         idx = idxs[loc:loc+BATCH_SIZE]
-        
+        #print(_images)
+        #print(idx)
         #if (len(idx))<BATCH_SIZE:
             
         
@@ -145,9 +148,11 @@ while moredata:
         print(f't iter: {e0-s0}')
 
         _reconstructed = _reconstructed.reshape((-1,96,96))
-        result = []
+        #result = []
         #for bb in range(BATCH_SIZE):
         for bb in range(len(idx)):
+            print(_images[bb][:4])
+            print(idx[bb])
             result.append([_images[bb], _reconstructed[bb], _residual[bb], _feature_residual[bb], _score[bb], idx[bb]])
         
         loc += BATCH_SIZE
@@ -156,8 +161,8 @@ while moredata:
       
         #if os.path.isfile(result_fn):
         #    os.rename(result_fn, f'{result_fn[:-4]}-backup.png')
-        #np.save(result_fn, np.array(result))
-        np.save( f'{results_dir}/results_{tag}{savetag}-{count}.npy', np.array(result))
+        np.save(result_fn, np.array(result))
+        #np.save( f'{results_dir}/results_{tag}{savetag}-{count}.npy', np.array(result))
         count += 1
     end = time.time()
     print(f"Time for {len(data)} images: {end-start} s")
