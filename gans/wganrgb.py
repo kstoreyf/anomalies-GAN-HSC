@@ -39,17 +39,18 @@ CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
 ITERS = 50000 # How many generator iterations to train for
 SAMPLE_ITERS = 100 # Multiples at which to generate image sample
-SAVE_ITERS = ITERS
+SAVE_ITERS = 500
 NSIDE = 96 # Don't change this without changing the model layers!
 NBANDS = 3
 OUTPUT_DIM = NSIDE*NSIDE*NBANDS # Number of pixels in MNIST (28*28)
+batchnorm = False
 
 tag = 'gri'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
 #tag = 'i20.0_norm'
 #imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
-out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/out_{tag}_red/'
+out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/out_{tag}_save/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
@@ -88,31 +89,32 @@ def Generator_module():
     noise = tf.placeholder(tf.float32, shape=[None, 128])
 
     output = lib.ops.linear.Linear('Generator.Input', 128, 8*6*6*DIM, noise)
-    if MODE == 'wgan':
+    if batchnorm:
         output = lib.ops.batchnorm.Batchnorm('Generator.BN1', [0], output)
     output = tf.nn.relu(output)
     output = tf.reshape(output, [-1, 8*DIM, 6, 6])
 
     output = lib.ops.deconv2d.Deconv2D('Generator.0', 8*DIM, 4*DIM, 5, output)
-    if MODE == 'wgan':
-        output = lib.ops.batchnorm.Batchnorm('Generator.BN1.5', [0,2,3], output)    
+    if batchnorm:
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN1.5', [0,3,2], output)    
     output = tf.nn.relu(output)
 
     output = lib.ops.deconv2d.Deconv2D('Generator.2', 4*DIM, 2*DIM, 5, output)
-    if MODE == 'wgan':
-        output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,2,3], output)
+    if batchnorm:
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN2', [0,3,2], output)
     output = tf.nn.relu(output)
 
     output = gaussian_noise_layer(output, 0.1)
 
     output = lib.ops.deconv2d.Deconv2D('Generator.3', 2*DIM, DIM, 5, output)
-    if MODE == 'wgan':
-        output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0,2,3], output)
+    if batchnorm:
+        output = lib.ops.batchnorm.Batchnorm('Generator.BN3', [0,3,2], output)
     output = tf.nn.relu(output)
     
     output = lib.ops.deconv2d.Deconv2D('Generator.5', DIM, NBANDS, 5, output)
     
     output = tf.nn.sigmoid(output)
+    #output = tf.tanh(output)
 
     output = tf.reshape(output, [-1, OUTPUT_DIM])
     
@@ -127,18 +129,18 @@ def Discriminator_module():
     output = LeakyReLU(output)
 
     output = lib.ops.conv2d.Conv2D('Discriminator.2', DIM, 2*DIM, 5, output, stride=2)
-    if MODE == 'wgan':
-        output = lib.ops.batchnorm.Batchnorm('Discriminator.BN2', [0,2,3], output)
+    if batchnorm:
+        output = lib.ops.batchnorm.Batchnorm('Discriminator.BN2', [0,3,2], output)
     output = LeakyReLU(output)
 
     output = lib.ops.conv2d.Conv2D('Discriminator.3', 2*DIM, 4*DIM, 5, output, stride=2)
-    if MODE == 'wgan':
-        output = lib.ops.batchnorm.Batchnorm('Discriminator.BN3', [0,2,3], output)
+    if batchnorm:
+        output = lib.ops.batchnorm.Batchnorm('Discriminator.BN3', [0,3,2], output)
     output = LeakyReLU(output)
 
     output = lib.ops.conv2d.Conv2D('Discriminator.4', 4*DIM, 8*DIM, 5, output, stride=2)
-    if MODE == 'wgan':
-        output = lib.ops.batchnorm.Batchnorm('Discriminator.BN4', [0,2,3], output)
+    if batchnorm:
+        output = lib.ops.batchnorm.Batchnorm('Discriminator.BN4', [0,3,2], output)
     output = LeakyReLU(output)
     
     hub.add_signature(inputs=inputs, outputs=output, name='feature_match')
@@ -253,6 +255,9 @@ fixed_noise = tf.constant(np.random.normal(size=(128, 128)).astype('float32'))
 fixed_noise_samples = Generator(fixed_noise)
 def generate_image(frame):
     samples = session.run(fixed_noise_samples)
+    #print(samples[0][0])
+    #samples = (0.5*(samples+1.))
+    #print(samples[0][0])
     samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1) #0321 also works
     #samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,1,3,2)
     #print(samples[0])
@@ -263,11 +268,13 @@ def generate_image(frame):
 # Dataset iterator
 print("Loading data")
 train_data = lib.datautils.load(imarr_fn)
-train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=True)
+train_gen = lib.datautils.DataGenerator(train_data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=False)
 
 print("Writing real sample")
 sample_real, _ = train_gen.sample(128)
-sample_real = sample_real.reshape((128, NSIDE, NSIDE, NBANDS))
+sample_real = sample_real.reshape((128, NBANDS, NSIDE, NSIDE))
+sample_real = sample_real.transpose(0,2,3,1)
+#sample_real = sample_real.reshape((128, NSIDE, NSIDE, NBANDS))
 lib.save_images.save_images(sample_real, out_dir+'real.png', unnormalize=True)
 #print(sample_real[0])
 
@@ -292,6 +299,9 @@ with tf.Session() as session:
             disc_iters = CRITIC_ITERS
         for i in range(disc_iters):
             _data, _ = train_gen.next()
+            #print(_data.shape)
+            #print((_data[0][int(OUTPUT_DIM/2-24):int(OUTPUT_DIM/2+24)]*255.).astype('uint8'))
+            #print(_data[0][40:-40,40:-40])
             _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
             
             _disc_cost, _ = session.run(
