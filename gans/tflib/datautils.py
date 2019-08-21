@@ -26,11 +26,11 @@ class DataGenerator():
     """
     def __init__(self, x, y=None, batch_size=32, shuffle=True, seed=0,
                  augment = False, luptonize=False, normalize=False, 
-                 shuffle_chunk=1000, smooth=True):
+                 shuffle_chunk=1000, smooth=False, once=False, starti=0):
         """Initialize data generator."""
         print(x.shape)
         self.x, self.y = x, y
-        if self.y == None:  # if no labels make up fake labels
+        if self.y is None:  # if no labels make up fake labels
             self.y = 42 * np.ones(len(self.x))
         assert self.x.shape[1] == self.x.shape[2]  # square! for augmentation
         assert not (luptonize and normalize), "Can't have both luptonize and normalize"
@@ -52,7 +52,9 @@ class DataGenerator():
 
         self.n_data = len(x)
         self.n_steps = len(x)//batch_size  +  (len(x) % batch_size > 0)
-        self.i = 0
+        self.i = starti
+        self.is_done = False
+        self.once = once
         self.reset_indices_and_reshuffle(force=True)
         
         
@@ -60,16 +62,24 @@ class DataGenerator():
     def reset_indices_and_reshuffle(self, force=False):
         """Reset indices and reshuffle images when needed."""
         if self.i == self.n_data or force:
-            print("shuffling")
+            print("Resetting indices")
             if self.shuffle:
+                print("Shuffling")
                 if self.shuffle_chunk:
+                    print("(fast)")
                     self.index = self.get_indices()
                 else:
                     self.index = self.rng.permutation(self.n_data)
             else:
                 self.index = np.arange(self.n_data)
-            self.i = 0
             
+            # don't reset the first time
+            if not force:
+                if self.once:
+                    print("DONE")
+                    self.is_done = True
+                    self.i = self.n_data #this will break things, shouldn't be called
+                self.i = 0
 
     def get_indices(self):
         nchunks = int(self.n_data/self.shuffle_chunk)
@@ -83,13 +93,20 @@ class DataGenerator():
                 if idx<self.n_data:
                     indices.append(idx)
         return indices
+        
                 
     def next(self):
         """Get next batch of images."""
         x = np.zeros((self.batch_size, self.x_shape))
         y = np.zeros((self.batch_size,))
         for i in range(self.batch_size):
-            x[i], y[i] = self.next_one()        
+            xi, yi = self.next_one()
+            if xi is not None:
+                x[i], y[i] = xi, yi
+            else:
+                x = x[:i]
+                y = y[:i]
+                break   
         return x,y
     
     
@@ -97,6 +114,9 @@ class DataGenerator():
         """Get next 1 image."""
         # reset index, reshuffle if necessary
         self.reset_indices_and_reshuffle()  
+        if self.is_done:
+            print("returning")
+            return None, None
         # get next x
         #x = self.x[self.index[self.i]].copy()
         idx = self.index[self.i]
@@ -134,10 +154,10 @@ class DataGenerator():
             rgb_q = 15
             rgb_stretch = 0.5
             rgb_min = 0
-            #x = make_lupton_rgb(x[:,:,2], x[:,:,1], x[:,:,0],
-            #             Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
-            x = make_lupton_rgb(x[:,:,2], x[:,:,2], x[:,:,2],
-                                     Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
+            x = make_lupton_rgb(x[:,:,2], x[:,:,1], x[:,:,0],
+                         Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
+            #x = make_lupton_rgb(x[:,:,2], x[:,:,2], x[:,:,2],
+            #                         Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
             x = np.array(x)
             x = np.array([xi/255. for xi in x])
         if self.smooth:
@@ -146,6 +166,9 @@ class DataGenerator():
         if self.normalize:
             x = np.arcsinh(x)
             x = (x - np.min(x))/np.ptp(x)
+        #print(x.shape)
+        x = x.transpose(2,0,1)
+        #print(x.shape)
         x = x.reshape(self.x_shape)
         return x
 
@@ -178,5 +201,10 @@ def load(fn, dataset='images'):
         return load_numpy(fn)
     elif fn.endswith(".h5"):
         f = h5py.File(fn,"r")
-        return f[dataset]
+        if dataset:
+            return f[dataset]
+        else:
+            return f
         #return np.array(f[dataset])
+
+
