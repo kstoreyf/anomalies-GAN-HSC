@@ -33,29 +33,31 @@ import tflib.datautils
 
 DIM = 64
 NSIDE = 96
-IMAGE_DIM = NSIDE*NSIDE
+NBANDS = 3
+IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 32
-ITERS = 10000 # How many generator iterations to train for
-SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
-SAVE_ITERS = 3000
+ITERS = 30000 # How many generator iterations to train for
+SAMPLE_ITERS = 250 # Multiples at which to generate image sample
+SAVE_ITERS = 1000
 overwrite = True
 
-tag = 'i20.0_norm'
+#tag = 'i20.0_norm'
 #tag = 'i20.0_norm_100k'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
-savetag = '_features0.05'
+tag = 'gri'
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+savetag = ''
 
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/encoder_{tag}{savetag}/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
-gentag = 'i20.0_norm_features'
-gennum = 12000
-gen_fn = f'/home/ksf293/kavli/anomalies-GAN-HSC/training_output/out_{gentag}/model-gen-{gennum}'
+gentag = 'gri_save'
+gennum = 10000
+gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/out_{gentag}/model-gen-{gennum}'
 
 disctag = gentag
 discnum = gennum
-disc_fn = f'/home/ksf293/kavli/anomalies-GAN-HSC/training_output/out_{disctag}/model-disc-{discnum}'
+disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/out_{disctag}/model-disc-{discnum}'
 
 lib.print_model_settings(locals().copy())
 
@@ -70,9 +72,9 @@ def LeakyReLU(x, alpha=0.2):
 
 def Encoder_module():
     inputs = tf.placeholder(tf.float32, shape=[None, IMAGE_DIM])
-    output = tf.reshape(inputs, [-1, 1, 96, 96])
+    output = tf.reshape(inputs, [-1, NBANDS, NSIDE, NSIDE])
 
-    output = lib.ops.conv2d.Conv2D('Encoder.1', 1, DIM,5,output,stride=2)
+    output = lib.ops.conv2d.Conv2D('Encoder.1', NBANDS, DIM,5,output,stride=2)
     #output = LeakyReLU(output)
     output = tf.nn.relu(output)
 
@@ -126,20 +128,23 @@ enc_optimizer = tf.train.AdamOptimizer(
         beta2=0.9
     ).minimize(enc_cost, var_list=params)
 
-data = lib.datautils.load_numpy(imarr_fn)
+data = lib.datautils.load(imarr_fn)
 idxs = range(len(data))
-data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE)
+data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=False)
 
-fixed_im = data[:128]
+#fixed_im = data[:128]
+fixed_im, _ = data_gen.sample(128)
 fixed_im_samples = Generator(Encoder(fixed_im.reshape((-1,IMAGE_DIM))))
+fixed_im = fixed_im.reshape((128, NBANDS, NSIDE, NSIDE))
+fixed_im = fixed_im.transpose(0,2,3,1)
 lib.save_images.save_images(
-        fixed_im.reshape((128, NSIDE, NSIDE)),
-        out_dir+'real.png'
+        fixed_im,
+        out_dir+'real.png', unnormalize=True
     )
 def generate_image(frame):
     samples = sess.run(fixed_im_samples)
     lib.save_images.save_images(
-        samples.reshape((128, NSIDE, NSIDE)),
+        samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1),
         out_dir+'samples_{}.png'.format(frame)
     )
 
@@ -160,7 +165,7 @@ with tf.Session() as sess:
         if (iteration % SAMPLE_ITERS == 0) or (iteration==ITERS-1):
             lib.plot.flush()
             generate_image(iteration)
-            print(_z, _enc_cost)
+            #print(_z, _enc_cost)
         if (iteration % SAVE_ITERS == 0) and iteration>0:
             enc_fn = out_dir+f'model-encoder-{iteration}'
             if overwrite and os.path.isdir(enc_fn):

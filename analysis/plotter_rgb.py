@@ -18,104 +18,121 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import h5py
 
 import save_images as saver
 import utils
-#from ..gans.tflib import save_images as saver
+
+
+NBANDS=3
 
 def main():
-    #tag = 'i85k_96x96_norm'
-    #tag = 'i20.0_norm_multigpu-0'
-    #tag = 'i20.0_norm_batch_ano0.05'
-    #tag = 'i20.0_norm_features0.05go'
-    tag = 'i20.0_norm_100k_features0.05go'
-    #tag = 'i20.0_norm_features0.05go_scores'
-    #multi = True
-    multi = False
-    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-08c'
-    #results_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/results'
+    
+    tag = 'gri'
+    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-14'
+    
     results_dir = f'/scratch/ksf293/kavli/anomaly/results'
+    results_fn = f'{results_dir}/results_{tag}.h5'
+
+    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+
+    #savetag = '_genscore'
+    savetag = ''
     #save_fn = f'{results_dir}/results_{tag}.png'
-    comp_fn = f'{plot_dir}/comp_{tag}.png'
-    dist_fn = f'{plot_dir}/dist_{tag}.png'
-    anom_fn = f'{plot_dir}/anoms_{tag}.png'
+    comp_fn = f'{plot_dir}/comp_{tag}{savetag}.png'
+    dist_fn = f'{plot_dir}/dist_{tag}{savetag}.png'
+    anom_fn = f'{plot_dir}/anoms_{tag}{savetag}.png'
 
-    if multi:
-        fns = [f'{results_dir}/{fn}' for fn in os.listdir(results_dir) if tag in fn and fn.endswith('.npy')]
-        res = np.concatenate([np.load(fn, allow_pickle=True)for fn in fns])
-    else:
-        results_fn = f'{results_dir}/results_{tag}.npy'
-        if 'scores' in tag:
-            scores = np.load(results_fn)
-        else:
-            res = np.load(results_fn, allow_pickle=True)
-            scores = res[:,4]
-
+    res = h5py.File(results_fn)
+    imarr = h5py.File(imarr_fn)
     #print(f'Num results: {len(res)}')
     #plot_dist(res[:,4], save_fn)
     #plot_comparisons(res, comp_fn, which='anomalous')
     #plot_comparisons(res, comp_fn, which='step')
-    plot_comparisons(res, comp_fn, which='random')
-    #plot_dist(scores, dist_fn)
-    #plot_anoms(res, anom_fn)
+    plot_comparisons(res, imarr, comp_fn, which='anomalous')
+    plot_comparisons(res, imarr, comp_fn, which='step')
+    plot_comparisons(res, imarr, comp_fn, which='random')
+    plot_dist(res['anomaly_scores'], dist_fn)
+    #plot_anoms(res, imarr, anom_fn)
 
 
-def plot_anoms(res, anom_fn, n=128):
-    res = sort_by_score(res)
-    res = res[-n:]
-    reals = res[:,0]
-    reals = np.stack(reals, axis=0)
-    print(reals)
+def plot_anoms(res, imarr, anom_fn, n=128):
+    idx_sorted = np.argsort(res['anomaly_scores'])
+    sample = idx_sorted[-n:]
+    reals = np.array([imarr['images'][s] for s in sample])
+    #res = sort_by_score(res)
+    reals = reals.reshape((-1,96,96,NBANDS))
     print(reals.shape)
-    saver.save_images(reals.reshape((n, 96, 96)), anom_fn)
+    reals = utils.luptonize(reals).astype('int')
+    #reals = np.stack(reals, axis=0)
+    #print(reals)
+    #print(reals.shape)
+    saver.save_images(reals, anom_fn)
     
  
 def sort_by_score(res):
-    scores = res[:,4]
+    scores = res['anomaly_scores']
     idx = np.argsort(scores)
-    return res[idx]
+    print(idx)
+    return res[list(idx)]
 
 
-def plot_comparisons(res, save_fn, which='anomalous'):
+def plot_comparisons(res, imarr, save_fn, which='anomalous', sortby='anomaly_scores'):
     # TODO: make it plot to correct number of pixels!
     nrows = 3
     ncols = 8
 
-    res = sort_by_score(res)
+    #res = sort_by_score(res)
+    idx_sorted = np.argsort(res[sortby])
 
     if which=='step':
-        step = int(len(res)/(nrows*ncols))
-        res = res[::step]
+        step = int(len(res['idxs'])/(nrows*ncols))
+        sample = idx_sorted[::step]
         
     if which=='anomalous':
-        res = res[-(nrows*ncols):]
+        sample = list(idx_sorted[-(nrows*ncols):])
 
     if which=='random':
-       sample_idx = [int(r) for r in np.random.choice(len(res), \
+       sample = [int(r) for r in np.random.choice(len(res['idxs']), \
                 size=nrows*ncols, replace=False)]
-       res = res[sample_idx]
+
+    if which=='check':
+        sample = range(nrows*ncols)
+
+    print(sample)
     
-    reals = res[:,0]
-    recons = res[:,1]
-    resids = res[:,2]
-    feat_resids = res[:,3] 
-    scores = res[:,4]
-    idxs = res[:,5]
+    reals = [imarr['images'][s] for s in sample]
+    recons = [res['reconstructed'][s] for s in sample]
+    resids = [res['gen_scores'][s] for s in sample]
+    feat_resids = [res['disc_scores'][s] for s in sample]
+    scores = [res['anomaly_scores'][s] for s in sample]
+    idxs = [res['idxs'][s] for s in sample]
     
+    labels = [res[sortby][s] for s in sample]
+
     fig, axarr = plt.subplots(nrows,ncols, figsize=(12,15))
     plt.subplots_adjust(left=0, right=1, top=0.96, bottom=0, hspace=0.1, wspace=0)
     cc = 0
     for i in range(nrows):
         for j in range(ncols):
-            real = reals[cc].reshape((96,96))
-            recon = recons[cc].reshape((96,96))
+            real = reals[cc].reshape((96,96,NBANDS))
+            real = utils.luptonize(real).astype('int')
+            recon = recons[cc].reshape((96,96,NBANDS)).astype('int')
             resid = abs(real-recon)
+
+            if i==0 and j==0:
+                print('real')
+                print(real[40:-40,40:-40])
+                print('recon')
+                print(recon[40:-40,40:-40])
+                print('resid')
+                print(resid[40:-40,40:-40])
             combined = np.vstack((resid, recon, real))
             axarr[i][j].imshow(combined, cmap='gray', origin='lower', interpolation='none', aspect='equal')
             axarr[i][j].set_xticks([])
             axarr[i][j].set_yticks([])
             #axarr[i][j].set_title('{}: {:.1f}\n ({:.1f}/{:.1f})'.format(idxs[cc], scores[cc], resids[cc], feat_resids[cc]), fontsize=10)
-            axarr[i][j].set_title('{:.2f}'.format(scores[cc]))
+            axarr[i][j].set_title('{:.2f}'.format(labels[cc]))
             axarr[i][j].axis('off')
             cc += 1 
 
@@ -146,10 +163,10 @@ def plot_dist(scores_all, save_fn, labels=None):
         print(len([s for s in scores if s>mean+3*std]))
         #color = plt.cm.rainbow(color_idx[i])
         if labels is not None:
-            plt.hist(scores, bins=60, histtype='step', color=color, lw=2, label=labels[i])
+            plt.hist(scores, bins=150, histtype='step', color=color, lw=2, label=labels[i])
             plt.legend()
         else:
-            plt.hist(scores, bins=60, histtype='step', color=color, lw=2)
+            plt.hist(scores, bins=150, histtype='step', color=color, lw=2)
         plt.axvline(mean, lw=1, color=lcolor)
         plt.axvline(mean+std, lw=0.8, color=lcolor, ls='--')
         plt.axvline(mean-std, lw=0.8, color=lcolor, ls='--')
@@ -159,6 +176,7 @@ def plot_dist(scores_all, save_fn, labels=None):
         plt.axvline(mean-3*std, lw=0.4, color=lcolor, ls='--')
     plt.xlabel('anomaly score')
     plt.ylabel('#')
+    #plt.xlim(500,3000)
     plt.savefig(save_fn)
 
 if __name__=='__main__':

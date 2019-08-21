@@ -13,18 +13,19 @@ import tflib.datautils as datautils
 def main():
     anoms = [102009] #i20.0_norm
     #idx = 15850
-    #tag = 'i20.0_norm'
-    tag = 'gri_1k'
-    #imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
-    
-    savetag = '_nolupnorm'
+    tag = 'i20.0_norm_100k'
+    #tag = 'gri_1k'
+    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
+    savetag = ''
+    #savetag = '_nolupnorm'
     save_fn = f"../thumbnails/real_{tag}{savetag}.png"
     #imarr = np.load(imarr_fn)
-    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+    #imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
     imarr = datautils.load(imarr_fn)
     #idx = [0,1]
-    #make_thumbnail(imarr, idx, tag)
-    make_batch(imarr, save_fn)
+    idx = 5191
+    make_thumbnail(imarr, idx, tag)
+    #make_batch(imarr, save_fn)
 
 def make_thumbnail(imarr, idxs, tag):
     if type(idxs)==int:
@@ -32,13 +33,16 @@ def make_thumbnail(imarr, idxs, tag):
     for idx in idxs:
         ims = imarr[idx]
         save_fn = f"../thumbnails/real_{tag}_{idx}.png"
-        imwrite(save_fn, np.flip(ims, 2))
+        #ims = ims.transpose(3, 1, 2)
+        imwrite(save_fn, ims)
+        #imwrite(save_fn, np.flip(ims, 2))
 
 
 def make_batch(imarr, save_fn, n=128):
     ims = imarr[:n]
     print(ims.shape)
     ims.reshape((n, 96, 96, -1))
+    #ims = ims.transpose(0, 3, 1, 2)
     ims = np.array([normalize(im) for im in ims])
     print(ims.shape)
     #ims = np.flip(ims, 3)
