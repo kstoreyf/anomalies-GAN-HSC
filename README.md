@@ -1,4 +1,4 @@
 # anomalies-GAN-HSC
-Detecting anomalies in hyper suprime-cam images with generative adversarial networks
+Detecting anomalies in Hyper Suprime-Cam (HSC) images with Generative Adversarial Networks (GANs)
 
-Project at the Kavli Summer Program in Astrophysics, UCSC - July 2019.
+Project started at the Kavli Summer Program in Astrophysics, UCSC, July 2019.
