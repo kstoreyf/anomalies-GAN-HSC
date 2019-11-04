@@ -105,7 +105,7 @@ def main(folder, info_fn, thumbnail_folder, outputname):
 
 
 if __name__=='__main__':
-	tag = 'cosmos_redextended'
+	tag = 'cosmos_bluecore'
 	import argparse
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-f' '--folder', dest='folder', help='folder with images', 

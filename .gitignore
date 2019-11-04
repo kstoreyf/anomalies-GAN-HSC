@@ -14,3 +14,5 @@ training_output/
 plots/
 *.pyc
 tflib_nohub/
+**/fits_images
+notebooks/
