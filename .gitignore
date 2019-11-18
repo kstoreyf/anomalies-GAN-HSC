@@ -16,3 +16,5 @@ plots/
 tflib_nohub/
 old/
 results
+**/fits_images
+notebooks/
