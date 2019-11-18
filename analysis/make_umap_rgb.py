@@ -17,12 +17,12 @@ import utils
 def main():
    
     tag = 'gri_100k'
-    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-13'
+    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-09-05'
 
     results_dir = f'/scratch/ksf293/kavli/anomaly/results'
     results_fn = f'{results_dir}/results_{tag}.h5'
 
-    imarr_fn = f'//scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
 
     savetag = '_clust'
   
@@ -43,7 +43,7 @@ def main():
     plot_fn = f'{plot_dir}/umap_{tag}{savetag}.png'
     
     #values, idxs, scores = get_autoencoded(auto_fn) 
-    reals, recons, gen_scores, disc_scores, scores, idxs = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
+    reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
     
     if mode=='images':
         values = reals    
@@ -76,6 +76,9 @@ def embed(values, idxs, colorby, plot_fn, save_fn):
     print("Plotting")
     plt.scatter(embedding[:, 0], embedding[:, 1], marker='.', c=colorby, cmap='viridis', s=8,
                                                                 vmin=min(colorby), vmax=4000)
+    plt.xlabel('umap 1')
+    plt.ylabel('umap 2')
+    
     cbar = plt.colorbar(extend='max')
     cbar.set_label('anomaly score', rotation=270, labelpad=10)
     #plt.clim(0,4000)

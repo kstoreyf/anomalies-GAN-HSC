@@ -11,24 +11,24 @@ from matplotlib import pyplot as plt
 from sklearn.mixture import GaussianMixture as GMM
 
 import save_images as saver
-import plotter
+import plotter_rgb as plotter
 import utils
 
 NBANDS = 3
 
-tag = 'gri_100k'
+tag = 'gri'
 #embtag = '_anoms'
 sigma = 3
 embtag = f'_clust_residuals_{sigma}sigma'
-savetag = embtag+'_ncomp5'
-n_components = 5
+savetag = embtag+'_ncomp10'
+n_components = 10
 clusteron = 'embed'
 
 emb_fn = f'/scratch/ksf293/kavli/anomaly/results/embedding_{tag}{embtag}.npy'
 embed = np.load(emb_fn, allow_pickle=True)
 
-plot_dir = '/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-13'
-plot_fn = f'{plot_dir}/gmm_{tag}{embtag}{savetag}.png'
+plot_dir = '/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-14b'
+plot_fn = f'{plot_dir}/gmm_{tag}{savetag}.png'
 
 results_dir = '/scratch/ksf293/kavli/anomaly/results'
 auto_fn = f'{results_dir}/autoencoded_{tag}.npy'
@@ -49,9 +49,9 @@ def get_autoencoded(auto_fn):
     return latents, idxs, scores
 
 n_anoms = 0
-if sigma>0:
-   savetag += f'_{sigma}sigma'
-reals, recons, gen_scores, disc_scores, scores, idxs = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
+#if sigma>0:
+#   savetag += f'_{sigma}sigma'
+reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
 residuals, reals, recons = utils.get_residuals(reals, recons)
 
 print("Getting values")
@@ -79,7 +79,7 @@ gmm = GMM(n_components=n_components).fit(values)
 print("Predicting")
 labels = gmm.predict(values)
 #plt.scatter(X[:, 0], X[:, 1], c=labels, s=40, cmap='viridis')
-plt.scatter(embed[0], embed[1], c=labels, s=10, cmap='viridis')
+plt.scatter(embed[0], embed[1], c=labels, s=10, cmap='rainbow')
 plt.savefig(plot_fn)
 
 def make_batch(arr, save_fn, n=128):
@@ -88,11 +88,16 @@ def make_batch(arr, save_fn, n=128):
     ims.reshape((-1, 96, 96, NBANDS))
     saver.save_images(ims, save_fn)
 
+
+res = {'reconstructed': recons, 'gen_scores': gen_scores, 'disc_scores': disc_scores,
+       'anomaly_scores': scores, 'idxs': idxs, 'object_ids': object_ids}
+imarr = {'images':reals}
+
 print("writing clusters")
 for nc in range(n_components):
     ims = np.array([reals[i] for i in range(len(labels)) if labels[i]==nc])
-    n = 128
-    if len(ims)<128:
+    n = 25
+    if len(ims)<n:
         n = len(ims)
     sample_idx = [int(r) for r in np.random.choice(len(ims), size=n, replace=False)]
     make_batch(ims[sample_idx], f'{plot_dir}/gmmcluster_{tag}{savetag}-{nc}.png')
@@ -101,6 +106,9 @@ for nc in range(n_components):
     print(len(resids))
     make_batch(resids[sample_idx], f'{plot_dir}/gmmcluster_{tag}{savetag}-{nc}-residuals.png')
     #res_sample = np.array([res[i] for i in range(len(labels)) if labels[i]==nc])
-    
-    #plotter.plot_comparisons(res_sample, f'{plot_dir}/comp_gmmcluster_{tag}{savetag}-{nc}.png', which='random')
+
+    idx_clust = [i for i in range(len(labels)) if labels[i]==nc]
+    idx_clust_sample = [int(r) for r in np.random.choice(idx_clust, size=24, replace=False)]
+
+    plotter.plot_comparisons(res, imarr, f'{plot_dir}/comp_gmmcluster_{tag}{savetag}-{nc}.png', which='sample', sample=idx_clust_sample, luptonize=False)
 

@@ -29,7 +29,7 @@ NBANDS=3
 def main():
     
     tag = 'gri'
-    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-14'
+    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2019-08-14b'
     
     results_dir = f'/scratch/ksf293/kavli/anomaly/results'
     results_fn = f'{results_dir}/results_{tag}.h5'
@@ -37,7 +37,7 @@ def main():
     imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
 
     #savetag = '_genscore'
-    savetag = ''
+    savetag = '_max4000'
     #save_fn = f'{results_dir}/results_{tag}.png'
     comp_fn = f'{plot_dir}/comp_{tag}{savetag}.png'
     dist_fn = f'{plot_dir}/dist_{tag}{savetag}.png'
@@ -50,9 +50,9 @@ def main():
     #plot_comparisons(res, comp_fn, which='anomalous')
     #plot_comparisons(res, comp_fn, which='step')
     plot_comparisons(res, imarr, comp_fn, which='anomalous')
-    plot_comparisons(res, imarr, comp_fn, which='step')
-    plot_comparisons(res, imarr, comp_fn, which='random')
-    plot_dist(res['anomaly_scores'], dist_fn)
+    #plot_comparisons(res, imarr, comp_fn, which='step')
+    #plot_comparisons(res, imarr, comp_fn, which='random')
+    #plot_dist(res['anomaly_scores'], dist_fn)
     #plot_anoms(res, imarr, anom_fn)
 
 
@@ -77,7 +77,7 @@ def sort_by_score(res):
     return res[list(idx)]
 
 
-def plot_comparisons(res, imarr, save_fn, which='anomalous', sortby='anomaly_scores'):
+def plot_comparisons(res, imarr, save_fn, which='anomalous', sortby='anomaly_scores', sample=[], luptonize=True):
     # TODO: make it plot to correct number of pixels!
     nrows = 3
     ncols = 8
@@ -85,12 +85,16 @@ def plot_comparisons(res, imarr, save_fn, which='anomalous', sortby='anomaly_sco
     #res = sort_by_score(res)
     idx_sorted = np.argsort(res[sortby])
 
+    if which=='sample':
+        sample = sample
+
     if which=='step':
         step = int(len(res['idxs'])/(nrows*ncols))
         sample = idx_sorted[::step]
         
     if which=='anomalous':
-        sample = list(idx_sorted[-(nrows*ncols):])
+        sample = list(idx_sorted[-(nrows*ncols)-84:-84]) #remove >4000 anomalies for all sample
+        #sample = list(idx_sorted[-(nrows*ncols):])
 
     if which=='random':
        sample = [int(r) for r in np.random.choice(len(res['idxs']), \
@@ -116,7 +120,8 @@ def plot_comparisons(res, imarr, save_fn, which='anomalous', sortby='anomaly_sco
     for i in range(nrows):
         for j in range(ncols):
             real = reals[cc].reshape((96,96,NBANDS))
-            real = utils.luptonize(real).astype('int')
+            if luptonize:
+                real = utils.luptonize(real).astype('int')
             recon = recons[cc].reshape((96,96,NBANDS)).astype('int')
             resid = abs(real-recon)
 
@@ -176,7 +181,7 @@ def plot_dist(scores_all, save_fn, labels=None):
         plt.axvline(mean-3*std, lw=0.4, color=lcolor, ls='--')
     plt.xlabel('anomaly score')
     plt.ylabel('#')
-    #plt.xlim(500,3000)
+    plt.xlim(0,4000)
     plt.savefig(save_fn)
 
 if __name__=='__main__':
