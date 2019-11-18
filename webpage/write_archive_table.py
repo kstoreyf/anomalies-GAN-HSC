@@ -3,10 +3,13 @@ import numpy as np
 import pandas as pd
 
 
-tag = 'cosmos_bluecore'
-imdir = f'../thumbnails/cosmos_targets/cosmos_1sig_interesting/{tag}'
+#tag = 'cosmos_bluecore'
+#imdir = f'../thumbnails/cosmos_targets/cosmos_1sig_interesting/{tag}'
+tag = 'hsc_gri_3sig_top100'
+imdir = f'../thumbnails/hsc/{tag}'
 table_fn = f'tables/{tag}.csv'
-cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_cosmos.csv'
+#cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_cosmos.csv'
+cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
 cat = pd.read_csv(cat_fn)
 cat = cat.set_index('Unnamed: 0')
 
