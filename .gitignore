@@ -20,3 +20,4 @@ results
 notebooks/
 **/.DS_store
 .ipynb_checkpoints/
+.vscode

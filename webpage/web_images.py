@@ -49,6 +49,7 @@ def main(folder, info_fn, thumbnail_folder, outputname):
     datasets = ['COSMOS', 'acs']
     #get the images and sort them into a dictionary of galaxies/objects
     imgfiles = glob.glob(folder+'/*')
+    print(imgfiles)
     #thumbfiles = glob.glob(thumbnail_folder+'/*')
     objcs = collections.defaultdict(list)
     for pattern in filepatterns:
@@ -73,9 +74,9 @@ def main(folder, info_fn, thumbnail_folder, outputname):
             
 
         
-        #sort the object keys by name (which is halo mass)
+        #sort the object keys by name
         keys = sorted(objcs.keys(), key=float, reverse=True)
-
+        print(keys)
         for iobj, obj in enumerate(keys):
             out.write("<tr>\n")
             #out.write('<td>\n<table>\n')
@@ -108,7 +109,7 @@ def main(folder, info_fn, thumbnail_folder, outputname):
 
 if __name__=='__main__':
     #tag = 'cosmos_bluecore'
-    tag = 'hsc_gri_3sig_top100'
+    tag = 'hsc_gri_3sig_top100-200'
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-f' '--folder', dest='folder', help='folder with images', 
