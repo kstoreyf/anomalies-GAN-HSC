@@ -125,19 +125,17 @@ def load_data(data_path):
     for i in range(len(imarr['idxs'])):
         idx2imloc[imarr['idxs'][i]] = i
 
-    #data = np.empty(len(imarr['idxs']))
     data = []
-    idxs = imarr['idxs']
+    object_ids = []
+    idxs = imarr['idxs'][:]
     for i in range(len(idxs)):
         idx = idxs[i]
-        #print(idx)
-        #print(idx2imloc[idx])
-        #print(imarr['images'][idx2imloc[idx]])
         data.append(imarr['images'][idx2imloc[idx]])
+        object_ids.append(imarr['object_ids'][idx2imloc[idx]])
 
-    return data, idxs
+    return data, idxs, object_ids
 
-# makes a dictionary of images to ids
+# makes a dictionary of info_ids to indices
 def reverse_galaxy_links(galaxy_links):
     gl = galaxy_links
     return {str(int(gl[v])): str(v) for v in range(len(gl))}
@@ -338,11 +336,11 @@ class astro_web(object):
     def __init__(self, data_type, data_path):
 
         #self.specs_gal, self.wave, self.galaxy_links = load_data(data_path)
-        self.ims_gal, self.galaxy_links = load_data(data_path)
+        self.ims_gal, self.galaxy_links, self.object_ids = load_data(data_path)
         self.N = len(self.ims_gal)
         self.imsize = [self.ims_gal[0].shape[0], self.ims_gal[0].shape[1]]
         self.reverse_galaxy_links = reverse_galaxy_links(self.galaxy_links)
-        self.umap_data = get_umaps(self, umaps_path+'umaps', embedding='umap_images')
+        self.umap_data = get_umaps(self, umaps_path, embedding='umap_images')
         self.color_mapper = LinearColorMapper(palette=Viridis256, low=0, high=1, nan_color=RGB(220, 220, 220, a = 0.1))
         self.high_colormap_factor = 0.1
         self.R_DOT = 10
@@ -355,7 +353,7 @@ class astro_web(object):
         #self.stacks_colors = [rgb2hex(   cmap(   i/(self.nof_stacks-1)   )       ) for i in range(self.nof_stacks)]
         self.stacks_colors = ['#fde725', '#90d743', '#35b779', '#21908d', '#31688e', '#443983', '#440154'][::-1]
 
-        self.selected_objects = ColumnDataSource(data=dict(index=[], score=[], order=[]))
+        self.selected_objects = ColumnDataSource(data=dict(index=[], score=[], order=[], info_id=[]))#, object_id=[]))
 
         self.generate_buttons()
         self.generate_sources()
@@ -456,6 +454,8 @@ class astro_web(object):
 
         self.selected_galaxies_columns = [
             TableColumn(field="index", title="Index"),
+            TableColumn(field="info_id", title="Info ID"),
+            #TableColumn(field="object_id", title="Object ID"),
             TableColumn(field="score", title="Score", formatter=NumberFormatter(format = '100.00')),
             #TableColumn(field="score", title="Score"),
             #TableColumn(field="order", title="Order", formatter=NumberFormatter(format = '100.00')),
@@ -467,7 +467,7 @@ class astro_web(object):
 
     def umap_figure_axes(self):
 
-        embedding_name =    get_embedding_name(self.select_umap.value)
+        embedding_name = self.select_umap.value
         if self.select_score.value == 'No color':
             self.umap_figure.title.text  = '{}'.format(embedding_name)
         else:
@@ -583,7 +583,8 @@ class astro_web(object):
                       ys=self.umap_data[self.select_umap.value][:, 1],
                       color_data=sd[:],
                       names=list(np.arange(len(sd))),
-                      radius=[self.R_DOT] * len(sd)))
+                      radius=[self.R_DOT] * len(sd)),
+                      )
 
 
 
@@ -600,7 +601,8 @@ class astro_web(object):
                           ys=self.umap_data[umap][:, 1],
                           color_data=sd[:],
                           names=list(np.arange(len(sd))),
-                          radius=[self.R_DOT] * len(sd)))
+                          radius=[self.R_DOT] * len(sd)),
+                          )
             rxs, rys, _ = get_relevant_objects_coords(temp_umap_source.data)
             temp_xlim = (np.min(rxs) - self.UMAP_XYLIM_DELTA, np.max(rxs) + self.UMAP_XYLIM_DELTA)
             temp_ylim = (np.min(rys) - self.UMAP_XYLIM_DELTA, np.max(rys) + self.UMAP_XYLIM_DELTA)
@@ -615,7 +617,8 @@ class astro_web(object):
                       ys=self.umap_data[self.select_umap.value][points, 1],
                       color_data=sd[points],
                       names=list(points),
-                      radius=[self.R_DOT] * len(points)))
+                      radius=[self.R_DOT] * len(points)),
+                    )
         self.points = np.array(points)
         self.umap_view = CDSView(source=self.umap_source_view)
 
@@ -649,6 +652,8 @@ class astro_web(object):
             index=[],
             score=[],
             order=[],
+            info_id=[],
+            #object_id=[]
         ))
 
         self.search_galaxy_source = ColumnDataSource(dict(
@@ -700,7 +705,8 @@ class astro_web(object):
                           ys=self.umap_data[self.select_umap.value][:, 1],
                           color_data=sd,
                           radius=[self.R_DOT] * len(sd),
-                          names=list(np.arange(len(sd)))))
+                          names=list(np.arange(len(sd))),
+                          ))
 
             self.umap_figure_axes()
             if True:
@@ -718,6 +724,7 @@ class astro_web(object):
             background_objects = get_decimated_region_points(self.xlim[0], self.xlim[1], self.ylim[0], self.ylim[1], self.umap_source.data, self.DECIMATE_NUMBER)
 
             selected_objects = self.selected_objects.data['index']
+            print(selected_objects)
             self.get_new_view_keep_selected(background_objects, selected_objects)
 
             self.select_score_table.value = self.select_score.value
@@ -780,7 +787,8 @@ class astro_web(object):
                           ys=self.umap_data[self.select_umap.value][:, 1],
                           color_data=sd,
                           radius=[self.R_DOT] * len(sd),
-                          names=list(np.arange(len(sd)))))
+                          names=list(np.arange(len(sd))),
+                        ))
 
 
             selected_objects = self.selected_objects.data['index']
@@ -809,6 +817,7 @@ class astro_web(object):
     def update_spectrum(self):
         print("update spectrum")
         # def callback():
+        #TODO: BE CAREFUL W INDEX VS ID
         index = self.select_galaxy.value
         print(index)
         specobjid = int(self.galaxy_links[int(index)])
@@ -1080,7 +1089,8 @@ class astro_web(object):
                           ys=self.umap_data[self.select_umap.value][new_objects, 1],
                           color_data=sd[new_objects],
                           names=list(new_objects),
-                          radius=[self.R_DOT] * len(new_objects)))
+                          radius=[self.R_DOT] * len(new_objects),
+                        ))
         self.points = np.array(new_objects)
         self.umap_scatter.data_source.data = self.umap_source_view.data
 
@@ -1089,11 +1099,17 @@ class astro_web(object):
 
         if nof_selected_objects > 0:
             order = np.array([float(o) for o in self.selected_objects.data['order']])
-            self.selected_objects.data = dict(index=list(selected_objects), score=[-999999 if np.isnan(sd[s]) else sd[s] for s in selected_objects], order=list(order))
+            self.selected_objects.data = dict(
+                index=list(selected_objects), 
+                score=[-999999 if np.isnan(sd[s]) else sd[s] for s in selected_objects],
+                order=list(order), 
+                info_id=[self.galaxy_links[s] for s in selected_objects],
+                #object_id=[self.object_ids[s] for s in selected_objects]
+            )
             self.update_table.value = str(np.random.rand())
         elif len(selected_objects_) > 0:
             print('HERE')
-            self.selected_objects = ColumnDataSource(data=dict(index=[], score=[], order=[]))
+            self.selected_objects = ColumnDataSource(data=dict(index=[], score=[], order=[], info_id=[]))#, object_id=[]))
             self.update_table.value = str(np.random.rand())
             self.internal_reset.value = str(np.random.rand())
             #order = np.array([float(0) for i in background_objects])
@@ -1152,8 +1168,9 @@ class astro_web(object):
                     self.umap_source.data,
                     self.DECIMATE_NUMBER)
 
-
+                print("umap selected:")
                 selected_objects = self.selected_objects.data['index']
+                print(selected_objects)
                 self.get_new_view_keep_selected(background_objects, selected_objects)
 
 
@@ -1271,7 +1288,7 @@ class astro_web(object):
 
 
         self.umap_source_view.selected.js_on_change('indices', CustomJS(
-            args=dict(s1=self.umap_source_view, s2=self.selected_galaxies_source, s3=self.selected_objects), code="""
+            args=dict(s1=self.umap_source_view, s2=self.selected_galaxies_source, s3=self.selected_objects, s4=self.galaxy_links, s5=self.object_ids), code="""
                 var inds = s1.attributes.selected['1d'].indices
                 var d1 = s1.data;
                 var d2 = s2.data;
@@ -1279,16 +1296,20 @@ class astro_web(object):
                 d2.index = []
                 d2.score = []
                 d2.order = []
+                d2.info_id = []
                 d3.index = []
                 d3.score = []
                 d3.order = []
+                d3.info_id = []
                 for (var i = 0; i < inds.length; i++) {
                     d2.index.push(d1['names'][inds[i]])
                     d2.score.push(d1['color_data'][inds[i]])
                     d2.order.push(0.0)
+                    d2.info_id.push(s4[d1['names'][inds[i]]])
                     d3.index.push(d1['names'][inds[i]])
                     d3.score.push(d1['color_data'][inds[i]])
                     d3.order.push(0.0)
+                    d3.info_id.push(s4[d1['names'][inds[i]]])
                 }
                 console.log('umap_source_view_js')
                 s2.change.emit();
@@ -1296,17 +1317,19 @@ class astro_web(object):
                 s3.change.emit();
             """))
         self.select_score_table.js_on_change('value', CustomJS(
-            args=dict(s1=self.umap_source_view, s2=self.selected_galaxies_source), code="""
+            args=dict(s1=self.umap_source_view, s2=self.selected_galaxies_source, s4=self.galaxy_links, s5=self.object_ids), code="""
                     var inds = s1.attributes.selected['1d'].indices
                     var d1 = s1.data;
                     var d2 = s2.data;
                     d2.index = []
                     d2.score = []
                     d2.order = []
+                    d2.info_id = []
                     for (var i = 0; i < inds.length; i++) {
                         d2.index.push(d1['names'][inds[i]])
                         d2.score.push(d1['color_data'][inds[i]])
                         d2.order.push(0.0)
+                        d2.info_id.push(s4[d1['names'][inds[i]]])
                     }
                     console.log(d2.index)
                     console.log('select_score_table_js')
@@ -1319,10 +1342,12 @@ class astro_web(object):
                     console.log(s3.attributes.data.index);
                     var selected_objects = s3.attributes.data.index;
                     var score = s3.attributes.data.score;
-                    var order = s3.attributes.data.order
+                    var order = s3.attributes.data.order;
+                    var info_id = s3.attributes.data.info_id
                     d2.index = []
                     d2.score = []
                     d2.order = []
+                    d2.info_id = []
                     var inds = []
                     console.log(selected_objects);
                     for (var i = 0; i < selected_objects.length; i++) {
@@ -1330,6 +1355,7 @@ class astro_web(object):
                         d2.index.push(selected_objects[i])
                         d2.score.push(score[i])
                         d2.order.push(order[i])
+                        d2.info_id.push(info_id[i])
                     }
                     s1.attributes.selected['1d'].indices = inds
                     s1.attributes.selected.attributes.indices = inds
