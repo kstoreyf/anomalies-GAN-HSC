@@ -139,11 +139,6 @@ def load_data(data_path):
     info_df = info_df.set_index('Unnamed: 0')
     object_ids = [str(info_df['object_id'].loc[int(idxs[i])]) for i in range(len(idxs))]
     checkval = info_df['object_id'].loc[262890]
-    print("CHECK")
-    print(str(checkval))
-    print(int(checkval))
-    print(str(int(checkval)))
-    print(73979712161994797)
     
     return data, idxs, object_ids
 
@@ -365,6 +360,7 @@ class astro_web(object):
         self.stack_by = 'x'
         #self.stacks_colors = [rgb2hex(   cmap(   i/(self.nof_stacks-1)   )       ) for i in range(self.nof_stacks)]
         self.stacks_colors = ['#fde725', '#90d743', '#35b779', '#21908d', '#31688e', '#443983', '#440154'][::-1]
+        self.nrow, self.ncol = 2, 5
 
         self.selected_objects = ColumnDataSource(data=dict(index=[], score=[], order=[], info_id=[], object_id=[]))
 
@@ -376,13 +372,20 @@ class astro_web(object):
         self.register_callbacks()
 
     def __call__(self, doc):
-        doc.add_root(column(row(  self.show_anomalies, self.select_anomalies_from,), #row(self.show_group, self.select_group),
-        row(column(self.umap_figure, self.data_figure, self.link_div, self.stacks_figure),
-                         column(self.title_div, #Div(text=""" """),
-                                self.select_umap, self.select_score,   #self.save_selected, #self.get_order,
-                                self.selected_galaxies_table,  self.search_galaxy, self.select_galaxy,
-                                self.get_stacks, self.select_nof_stacks, self.select_stack_by,
-                                self.select_spectrum_plot_type, self.select_colormap, self.select_score_table, self.update_table, self.internal_reset))))
+        doc.add_root(column(row(  self.show_anomalies, self.select_anomalies_from,),
+        row(column(self.umap_figure, self.stacks_figure, row(self.prev_button, self.next_button)),
+                         column(#Div(text=""" """),
+                                self.select_umap, self.select_score, self.select_colormap,  #self.save_selected, #self.get_order,
+                                self.search_galaxy, self.select_galaxy, 
+                                self.data_figure, self.selected_galaxies_table, self.title_div  
+                                ))))
+        #doc.add_root(column(row(  self.show_anomalies, self.select_anomalies_from,), #row(self.show_group, self.select_group),
+        # row(column(self.umap_figure, self.data_figure, self.link_div, self.stacks_figure),
+        #                  column(self.title_div, #Div(text=""" """),
+        #                         self.select_umap, self.select_score,   #self.save_selected, #self.get_order,
+        #                         self.selected_galaxies_table,  self.search_galaxy, self.select_galaxy,
+        #                         self.get_stacks, self.select_nof_stacks, self.select_stack_by,
+        #                         self.select_spectrum_plot_type, self.select_colormap, self.select_score_table, self.update_table, self.internal_reset))))
         doc.title = 'HSC Galaxies'
 
 
@@ -455,7 +458,10 @@ class astro_web(object):
         self.select_galaxy = TextInput(title='Choose Galaxy Index:', value='0')
 
         #self.get_order = Button(label="Get order", button_type="warning")
-        self.get_stacks = Button(label="Get stacks", button_type="success")
+        #self.get_stacks = Button(label="Get stacks", button_type="success")
+        self.next_button = Button(label="Next", button_type="success")
+        self.prev_button = Button(label="Previous", button_type="success")
+
         #self.save_selected = Button(label="Save selected", button_type="warning")
 
         self.title_div = Div(text='<center>User manual is available at: <a href="{}" target="_blank">{}</a></center>'.format(
@@ -484,7 +490,7 @@ class astro_web(object):
         if self.select_score.value == 'No color':
             self.umap_figure.title.text  = '{}'.format(embedding_name)
         else:
-            self.umap_figure.title.text  = '{}                 Colored by {}'.format(embedding_name , self.select_score.value)
+            self.umap_figure.title.text  = '{} - Colored by {}'.format(embedding_name , self.select_score.value)
         self.umap_figure.title.text_font_size = '17pt'
 
         if 'UMAP' in embedding_name:
@@ -523,7 +529,8 @@ class astro_web(object):
 
     def generate_figures(self):
 
-        umap_plot_width = 1200
+        umap_plot_width = 800
+        column_width = 350
         #taptool = TapTool(callback=self.select_galaxy_callback)
         self.umap_figure = figure(tools='lasso_select,tap,box_zoom,save,reset',
                                   plot_width=umap_plot_width,
@@ -534,55 +541,45 @@ class astro_web(object):
 
         # y_range=(-10, 10))
         #self.umap_figure.toolbar.active_scroll = 'auto'
-        self.data_figure = figure(tools="box_zoom,save,reset", plot_width=300, plot_height=300,
+        self.data_figure = figure(tools="box_zoom,save,reset", plot_width=column_width,
+                                      plot_height=column_width,
                                       toolbar_location="above", output_backend='webgl',
                                       x_range=(0,96), y_range=(0,96))
         
         #self.stacks_figure = figure(tools="box_zoom,save,reset", plot_width=600, plot_height=400,
         #                               toolbar_location="above", output_backend='webgl')
 
-        ncollage = 6
+        buffer = 10*self.ncol
+        collage_im_width = int((umap_plot_width-buffer)/self.ncol)
         self.stacks_figures = []
-        for _ in range(ncollage):
-            sfig = figure(tools="box_zoom,save,reset", plot_width=100, plot_height=100, toolbar_location="above", output_backend='webgl', x_range=(0,96), y_range=(0,96))
+        for _ in range(self.nrow*self.ncol):
+            sfig = figure(tools="box_zoom,save,reset", plot_width=collage_im_width, plot_height=collage_im_width, 
+            toolbar_location="above", output_backend='webgl', x_range=(0,96), y_range=(0,96))
             self.stacks_figures.append(sfig)
 
-        self.stacks_figure = gridplot(self.stacks_figures, ncols=3)
+        self.stacks_figure = gridplot(self.stacks_figures, ncols=self.ncol)
 
 
-        self.umap_colorbar = ColorBar(color_mapper=self.color_mapper, location=(0, 0), major_label_text_font_size='15pt')
+        self.umap_colorbar = ColorBar(color_mapper=self.color_mapper, location=(0, 0), major_label_text_font_size='15pt', label_standoff=13)
         self.umap_figure.add_layout(self.umap_colorbar, 'right')
 
         self.umap_figure_axes()
 
         # TODO: make this the index
         t = Title()
-        t.text = '{}'.format(self.select_galaxy.value)
+        ind = self.select_galaxy.value
+        info_id = int(self.galaxy_links[int(ind)])
+        t.text = '{}'.format(info_id)
         self.data_figure.title = t
 
-        #self.data_figure.xaxis.axis_label = 'Rest wavelength [A]'
-        self.data_figure.xaxis.major_label_text_font_size = "0pt"
-        self.data_figure.xaxis.axis_label_text_font_size = "0pt"
-        self.data_figure.yaxis.major_label_text_font_size = "0pt"
+        self.remove_ticks_and_labels(self.data_figure)
 
-        self.data_figure.xaxis.major_tick_line_color = None  # turn off x-axis major ticks
-        self.data_figure.xaxis.minor_tick_line_color = None  # turn off x-axis minor ticks
-
-        self.data_figure.yaxis.major_tick_line_color = None  # turn off y-axis major ticks
-        self.data_figure.yaxis.minor_tick_line_color = None  # turn off y-axis minor tick
-
-        #t = Title()
-        #t.text = 'Stacks'
-        #self.stacks_figure.title = t
-
-        # self.stacks_figure.xaxis.axis_label = 'Rest wavelength [A]'
-        # self.stacks_figure.xaxis.major_label_text_font_size = "15pt"
-        # self.stacks_figure.xaxis.axis_label_text_font_size = "15pt"
-        # self.stacks_figure.yaxis.major_label_text_font_size = "15pt"
+        for i in range(len(self.stacks_figures)):
+            self.remove_ticks_and_labels(self.stacks_figures[i])
 
         self.selected_galaxies_table = DataTable(source=self.selected_galaxies_source,
                                                  columns=self.selected_galaxies_columns,
-                                                 width=350,
+                                                 width=column_width,
                                                  height=200,
                                                  scroll_to_selection=False)
 
@@ -591,6 +588,17 @@ class astro_web(object):
         #    self.spectrum_figure.add_layout(l)
         #    self.stacks_figure.add_layout(l)
 
+
+    def remove_ticks_and_labels(self, figure):
+        figure.xaxis.major_label_text_font_size = "0pt"
+        figure.xaxis.axis_label_text_font_size = "0pt"
+        figure.yaxis.major_label_text_font_size = "0pt"
+
+        figure.xaxis.major_tick_line_color = None  # turn off x-axis major ticks
+        figure.xaxis.minor_tick_line_color = None  # turn off x-axis minor ticks
+
+        figure.yaxis.major_tick_line_color = None  # turn off y-axis major ticks
+        figure.yaxis.minor_tick_line_color = None  # turn off y-axis minor tick
 
 
     def generate_sources(self):
@@ -643,16 +651,8 @@ class astro_web(object):
         self.points = np.array(points)
         self.umap_view = CDSView(source=self.umap_source_view)
 
-        print(self.ims_gal[0].shape)
-
-        #xsize = self.ims_gal[0].shape[0]
-        #ysize = self.ims_gal[0].shape[1]
-        #print(xsize, ysize)
-        #x = np.arange(xsize)-xsize/2.
-        #y = np.arange(ysize)-ysize/2.
-        #dw=x.max()-x.min()
-        #dh=y.max()-y.min()
         im = process_image(self.ims_gal[0])
+        #im = None
         xsize, ysize = self.imsize
         self.data_source = ColumnDataSource(
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
@@ -660,15 +660,16 @@ class astro_web(object):
 
         xsize, ysize = self.imsize
         self.stacks_sources = []
-        nrow, ncol = 2, 3
         #imcollage = np.zeros((nrow*self.imsize, ncol*self.imsize))
         count = 0
-        nims = nrow*ncol
-        while count < nims:
+        ncollage = self.nrow*self.ncol
+        im_empty = self.get_im_empty()
+        while count < ncollage:
             source = ColumnDataSource(
-                data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
+                data = {'image':[im_empty], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
             )
             self.stacks_sources.append(source)
+            #self.stacks_sources.append(None)
             count += 1
 
         self.stacks_source = ColumnDataSource(
@@ -695,8 +696,8 @@ class astro_web(object):
             ys=[self.umap_data[self.select_umap.value][0, 1]],
         ))
 
-
-
+    def get_im_empty(self):
+        return np.zeros((self.imsize[0], self.imsize[1], 4)).astype(np.uint8)
 
     def generate_plots(self):
         print("gen plots")
@@ -716,17 +717,15 @@ class astro_web(object):
         #self.spectrum_stacks = self.stacks_figure.image_rgba('image', 'x', 'y', 'dw', 'dh', source=self.stacks_source)
 
         self.spectrum_stacks = []
-        for i in range(len(self.stacks_sources)):
+        for i in range(self.nrow*self.ncol):
             spec_stack = self.stacks_figures[i].image_rgba('image', 'x', 'y', 'dw', 'dh', source=self.stacks_sources[i])
             self.spectrum_stacks.append(spec_stack)
 
-        # should this be stacks_figure ?        
-        #self.spectrum_stacks = gridplot(specs_stacks, ncols=3)
         print(self.stacks_sources)
         print(self.spectrum_stacks)
         print(self.stacks_figures)
-        self.stacks_figure = gridplot(self.stacks_figures, ncols=3)
-
+        self.stacks_figure = gridplot(self.stacks_figures, ncols=self.ncol)
+        #self.stacks_figure = gridplot([])
         # self.spectrum_stacks2 = self.stacks_figure.image_rgba('image', 'x', 'y', 'dw', 'dh', source=self.stacks_source)
         # p = gridplot([s1, s2])
         #self.spectrum_stacks = self.stacks_figure.multi_line('xs', 'ys', source=self.stacks_source, color='c', alpha=1, line_width=3,muted_alpha=0.2)
@@ -935,35 +934,101 @@ class astro_web(object):
             np.save('/Users/itamar/git/astro/spectra_maps_web/temp/selected_inds', selected_inds)
             return
 
+
+    def reset_stack_index(self):
+        self.stack_index = 0
+
+    def next_stack_index(self):
+        selected_objects = self.selected_objects.data['index']
+        nof_selected = len(selected_objects)
+        new_index = self.stack_index + self.ncol*self.nrow
+        if new_index < nof_selected:
+            self.stack_index = new_index
+            self.select_stacks_callback()
+        # else disable button
+
+    def prev_stack_index(self):
+        print('prev')
+        print(self.stack_index)
+        if self.stack_index != 0:
+            self.stack_index -= self.ncol*self.nrow
+            self.select_stacks_callback()
+        # else disable button
+
+    #DONOW: select_stacks_callback above aren't doing anything bc callback function is inside
+
+    def select_stacks_callback(self):
+
+        def callback(event):
+            print('select_stacks_callback')
+
+            selected_objects = self.selected_objects.data['index']
+            selected_inds = np.array([int(s) for s in selected_objects])
+            nof_selected = selected_inds.size
+            inds_visible = selected_inds[self.stack_index:self.stack_index+self.nrow*self.ncol]
+
+            xsize, ysize = self.imsize
+            self.stacks_sources = []
+            count = 0
+            #nims = np.min((nrow*ncol, len(selected_inds)))
+            im_empty = self.get_im_empty()
+            while count < self.nrow*self.ncol:
+                if count < len(inds_visible):
+                    #nd = selected_inds[self.stack_index + count]
+                    ind = inds_visible[count]
+                    print(ind)
+                    im = process_image(self.ims_gal[ind])
+                else:
+                    im = im_empty
+
+                source = ColumnDataSource(
+                    data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
+                )
+                self.stacks_sources.append(source)
+                count += 1
+
+            self.stack_index += count
+
+            for i in range(len(self.stacks_sources)):
+                self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
+
+            for i in range(len(inds_visible)):
+                t = Title()
+                info_id = self.galaxy_links[int(inds_visible[i])]
+                t.text = '{}'.format(int(info_id))
+                print('title', t.text)
+                self.stacks_figures[i].title = t
+
+        return callback
+
+
     def get_stacks_callback(self):
 
         print('get_stacks_callback')
-
-
 
         selected_objects = self.selected_objects.data['index']
 
         selected_inds = np.array([int(s) for s in selected_objects])
 
-        selected_spectra_mat = self.specs_gal[selected_inds]
+        #selected_spectra_mat = self.specs_gal[selected_inds]
         nof_selected = selected_inds.size
 
-        if self.stack_by == 'x':
-            xs=np.array(self.umap_data[self.select_umap.value][:, 0])
-            order = np.array([float(o) for o in xs[selected_inds]])
-            self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-            self.selected_galaxies_source.data = self.selected_objects.data
+        # if self.stack_by == 'x':
+        #     xs=np.array(self.umap_data[self.select_umap.value][:, 0])
+        #     order = np.array([float(o) for o in xs[selected_inds]])
+        #     self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
+        #     self.selected_galaxies_source.data = self.selected_objects.data
 
-        elif self.stack_by == 'y':
-            ys=np.array(self.umap_data[self.select_umap.value][:, 1])
-            order = np.array([float(o) for o in ys[selected_inds]])
-            self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-            self.selected_galaxies_source.data = self.selected_objects.data
-        elif self.stack_by == 'auto':
-            xs=np.array(self.umap_data[self.select_umap.value][:, 0])
-            order = np.array([float(o) for o in xs[selected_inds]])
-            self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-            self.selected_galaxies_source.data = self.selected_objects.data
+        # elif self.stack_by == 'y':
+        #     ys=np.array(self.umap_data[self.select_umap.value][:, 1])
+        #     order = np.array([float(o) for o in ys[selected_inds]])
+        #     self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
+        #     self.selected_galaxies_source.data = self.selected_objects.data
+        # elif self.stack_by == 'auto':
+        #     xs=np.array(self.umap_data[self.select_umap.value][:, 0])
+        #     order = np.array([float(o) for o in xs[selected_inds]])
+        #     self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
+        #     self.selected_galaxies_source.data = self.selected_objects.data
 
 
             #print('get_order_callback')
@@ -978,29 +1043,40 @@ class astro_web(object):
             #    order = numpy.zeros(len(selected_objects))
             #order = np.array([float(o) for o in self.selected_objects.data['order']])
 
-        delta = 0
-        stacks_ = ladder_plot_smooth(selected_spectra_mat, np.arange(nof_selected), order, self.nof_stacks, delta)
-        stacks = [np.log(s  + sys.float_info.epsilon) if self.use_log() else s for s in stacks_]
+        #delta = 0
+        #stacks_ = ladder_plot_smooth(selected_spectra_mat, np.arange(nof_selected), order, self.nof_stacks, delta)
+        #stacks = [np.log(s  + sys.float_info.epsilon) if self.use_log() else s for s in stacks_]
 
         # self.stacks_source = ColumnDataSource(
         #                     data=dict(xs=[self.wave]*self.nof_stacks,
         #                               ys=stacks,
         #                               c=self.stacks_colors[:self.nof_stacks]))
         
+        ## TODO: try again without adding nonetypes and see if still get error
+        ## to check if error related to this or the callback
+        # thanks past kate!!
+
+        print("Update stacks")
         xsize, ysize = self.imsize
         self.stacks_sources = []
         nrow, ncol = 2, 3
         #imcollage = np.zeros((nrow*self.imsize, ncol*self.imsize))
         count = 0
-        nims = np.min(nrow*ncol, len(selected_inds))
-        while count < nims:
+        #nims = np.min((nrow*ncol, len(selected_inds)))
+        while count < nrow*ncol:
+            if count >= nof_selected:
+                self.stacks_sources.append(None)
+                count += 1
+                continue 
             ind = selected_inds[count]
+            print(ind)
             im = process_image(self.ims_gal[ind])
             source = ColumnDataSource(
                 data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
             )
             self.stacks_sources.append(source)
             count += 1
+        print(self.stacks_sources)
 
         xsize, ysize = self.imsize
         im = process_image(self.ims_gal[0])
@@ -1008,8 +1084,12 @@ class astro_web(object):
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
         )
 
-        for i in range(6):
+        print("num")
+        print(len(self.spectrum_stacks))
+        print(nof_selected)
+        for i in range(nof_selected):
             self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
+        print("here?")
         #score = self.selected_objects.data['score']
         #if len(selected_objects) > 2:
         #    order = get_order_from_umap(self.umap_source.data, selected_objects)
@@ -1320,9 +1400,15 @@ class astro_web(object):
 
 
         self.show_anomalies.on_click(self.show_anomalies_callback)
+        self.next_button.on_click(self.next_stack_index)
+        #self.next_button.on_click(self.select_stacks_callback())
+        self.prev_button.on_click(self.prev_stack_index)        
+        #self.prev_button.on_click(self.select_stacks_callback())
+
+
         #self.show_group.on_click(self.show_group_callback)
         #self.get_order.on_click(self.get_order_callback)
-        self.get_stacks.on_click(self.get_stacks_callback)
+        #self.get_stacks.on_click(self.get_stacks_callback)
         #self.save_selected.on_click(self.save_selected_callback)
         #self.select_galaxy.on_click(self.select_galaxy_callback())
 
@@ -1337,6 +1423,10 @@ class astro_web(object):
         self.select_stack_by.on_change('value', self.select_stack_by_callback())
 
         self.select_colormap.on_change('value', self.select_colormap_callback())
+
+        #self.select_umap.on_change('value', self.select_stacks_callback())
+        self.umap_figure.on_event(PanEnd, self.reset_stack_index)
+        self.umap_figure.on_event(PanEnd, self.select_stacks_callback())
 
         self.selected_galaxies_source.selected.js_on_change('indices',
                                                             CustomJS(
