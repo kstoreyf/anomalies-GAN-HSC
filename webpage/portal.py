@@ -459,8 +459,8 @@ class astro_web(object):
 
         #self.get_order = Button(label="Get order", button_type="warning")
         #self.get_stacks = Button(label="Get stacks", button_type="success")
-        self.next_button = Button(label="Next", button_type="success")
-        self.prev_button = Button(label="Previous", button_type="success")
+        self.next_button = Button(label="Next", button_type="default")
+        self.prev_button = Button(label="Previous", button_type="default")
 
         #self.save_selected = Button(label="Save selected", button_type="warning")
 
@@ -939,12 +939,18 @@ class astro_web(object):
         self.stack_index = 0
 
     def next_stack_index(self):
+        print('next')
+        print(self.stack_index)
         selected_objects = self.selected_objects.data['index']
         nof_selected = len(selected_objects)
         new_index = self.stack_index + self.ncol*self.nrow
         if new_index < nof_selected:
             self.stack_index = new_index
-            self.select_stacks_callback()
+            self.stacks_callback()
+        #    self.prev_button.enabled
+        #else:
+        #    self.next_button.disabled
+        print(self.stack_index)
         # else disable button
 
     def prev_stack_index(self):
@@ -952,7 +958,11 @@ class astro_web(object):
         print(self.stack_index)
         if self.stack_index != 0:
             self.stack_index -= self.ncol*self.nrow
-            self.select_stacks_callback()
+            self.stacks_callback()
+        #    self.next_button.enabled
+        #else:
+        #    self.prev_button.disabled
+        print(self.stack_index)
         # else disable button
 
     #DONOW: select_stacks_callback above aren't doing anything bc callback function is inside
@@ -960,46 +970,91 @@ class astro_web(object):
     def select_stacks_callback(self):
 
         def callback(event):
-            print('select_stacks_callback')
 
-            selected_objects = self.selected_objects.data['index']
-            selected_inds = np.array([int(s) for s in selected_objects])
-            nof_selected = selected_inds.size
-            inds_visible = selected_inds[self.stack_index:self.stack_index+self.nrow*self.ncol]
+            self.stacks_callback()
+            # print('select_stacks_callback')
 
-            xsize, ysize = self.imsize
-            self.stacks_sources = []
-            count = 0
-            #nims = np.min((nrow*ncol, len(selected_inds)))
-            im_empty = self.get_im_empty()
-            while count < self.nrow*self.ncol:
-                if count < len(inds_visible):
-                    #nd = selected_inds[self.stack_index + count]
-                    ind = inds_visible[count]
-                    print(ind)
-                    im = process_image(self.ims_gal[ind])
-                else:
-                    im = im_empty
+            # selected_objects = self.selected_objects.data['index']
+            # selected_inds = np.array([int(s) for s in selected_objects])
+            # nof_selected = selected_inds.size
+            # inds_visible = selected_inds[self.stack_index:self.stack_index+self.nrow*self.ncol]
 
-                source = ColumnDataSource(
-                    data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
-                )
-                self.stacks_sources.append(source)
-                count += 1
+            # xsize, ysize = self.imsize
+            # self.stacks_sources = []
+            # count = 0
+            # #nims = np.min((nrow*ncol, len(selected_inds)))
+            # im_empty = self.get_im_empty()
+            # while count < self.nrow*self.ncol:
+            #     if count < len(inds_visible):
+            #         #nd = selected_inds[self.stack_index + count]
+            #         ind = inds_visible[count]
+            #         print(ind)
+            #         im = process_image(self.ims_gal[ind])
+            #     else:
+            #         im = im_empty
 
-            self.stack_index += count
+            #     source = ColumnDataSource(
+            #         data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
+            #     )
+            #     self.stacks_sources.append(source)
+            #     count += 1
 
-            for i in range(len(self.stacks_sources)):
-                self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
+            # #self.stack_index += count
 
-            for i in range(len(inds_visible)):
-                t = Title()
-                info_id = self.galaxy_links[int(inds_visible[i])]
-                t.text = '{}'.format(int(info_id))
-                print('title', t.text)
-                self.stacks_figures[i].title = t
+            # for i in range(len(self.stacks_sources)):
+            #     self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
+
+            # for i in range(len(inds_visible)):
+            #     t = Title()
+            #     info_id = self.galaxy_links[int(inds_visible[i])]
+            #     t.text = '{}'.format(int(info_id))
+            #     print('title', t.text)
+            #     self.stacks_figures[i].title = t
 
         return callback
+
+
+    def stacks_callback(self):
+        
+        print('select_stacks_callback')
+
+        selected_objects = self.selected_objects.data['index']
+        selected_inds = np.array([int(s) for s in selected_objects])
+        nof_selected = selected_inds.size
+        inds_visible = selected_inds[self.stack_index:self.stack_index+self.nrow*self.ncol]
+
+        xsize, ysize = self.imsize
+        self.stacks_sources = []
+        count = 0
+        #nims = np.min((nrow*ncol, len(selected_inds)))
+        im_empty = self.get_im_empty()
+        while count < self.nrow*self.ncol:
+            if count < len(inds_visible):
+                #nd = selected_inds[self.stack_index + count]
+                ind = inds_visible[count]
+                print(ind)
+                im = process_image(self.ims_gal[ind])
+            else:
+                im = im_empty
+
+            source = ColumnDataSource(
+                data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
+            )
+            self.stacks_sources.append(source)
+            count += 1
+
+        #self.stack_index += count
+
+        for i in range(len(self.stacks_sources)):
+            self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
+
+        for i in range(len(inds_visible)):
+            t = Title()
+            info_id = self.galaxy_links[int(inds_visible[i])]
+            t.text = '{}'.format(int(info_id))
+            print('title', t.text)
+            self.stacks_figures[i].title = t
+
 
 
     def get_stacks_callback(self):
