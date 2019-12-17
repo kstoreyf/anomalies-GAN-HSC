@@ -34,7 +34,8 @@ path_dict = dict(
     galaxies='data/images_h5/'
 )
 
-tag = 'gri_3sig'
+#tag = 'gri_3sig'
+tag = 'gri_cosmos_fix'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
 results_path = 'results/'
@@ -71,13 +72,14 @@ def get_umaps(self, path, embedding=None):
     
     print(f"Loading embeddings {os.listdir(path)}")
     for p in np.sort(os.listdir(path)):
-        coords = np.load(os.path.join(path, p))
-        umap_dict[get_embedding_name(p)] = coords
-        if embedding in p:
-            embed = False
+        if tag in p:
+            coords = np.load(os.path.join(path, p))
+            umap_dict[get_embedding_name(p)] = coords
+            if embedding in p:
+                embed = False
 
     if embed:
-        efn = os.path.join(path, f'{embedding}.npy')
+        efn = os.path.join(path, f'{embedding}_{tag}.npy')
         try:
             values = embedding_dict[embedding]
         except KeyError:
@@ -271,7 +273,8 @@ def get_embedding_name(u):
 
     if 'umap' in u:
         #name = 'UMAP {}-{} A'.format(get_numbers(u)[-2], get_numbers(u)[-1])
-        name = u[:-4]#.replace('_', ' ', 1)
+        #name = u[:-4]#.replace('_', ' ', 1)
+        name = '_'.join((u.split('_')[:2]))
     else:
         name = u
     return name
@@ -339,6 +342,9 @@ def get_decimated_region_points(x_min, x_max, y_min, y_max, datasource, DECIMATE
     if len(is_in_box_inds) < DECIMATE_NUMBER:
         return is_in_box_inds
     random_objects_ = np.random.choice(is_in_box_inds, DECIMATE_NUMBER, replace=False)
+    print(datasource)
+    print(datasource['names'])
+    print(datasource.keys())
     random_objects = [datasource['names'][r] for r in random_objects_]
     return random_objects
 
@@ -398,7 +404,7 @@ class astro_web(object):
         self.N = len(self.ims_gal)
         self.imsize = [self.ims_gal[0].shape[0], self.ims_gal[0].shape[1]]
         self.reverse_galaxy_links = reverse_galaxy_links(self.galaxy_links)
-        self.umap_data = get_umaps(self, umaps_path, embedding='umap_residuals')
+        self.umap_data = get_umaps(self, umaps_path, embedding='umap_images')
         self.color_mapper = LinearColorMapper(palette=Viridis256, low=0, high=1, nan_color=RGB(220, 220, 220, a = 0.1))
         self.high_colormap_factor = 0.1
         self.R_DOT = 10
