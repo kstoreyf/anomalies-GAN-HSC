@@ -35,7 +35,7 @@ path_dict = dict(
 )
 
 #tag = 'gri_3sig'
-tag = 'gri_cosmos_fix'
+tag = 'gri_cosmos'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
 results_path = 'results/'
