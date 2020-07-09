@@ -1,0 +1,8 @@
+Users are encouraged to provide feedback regarding the data quality of the downloaded data products by contacting the ESO Archive Science Group via usd-help@eso.org, subject: Phase 3
+
+Below is an overview of the structure (dataset, archive file name, original file name, category, size) of  request 519480 "PHASE3 Inspect interesting object" : 
+
+PHASE3+3748681+ADP.2015-10-15T12:53:33.873:
+	- ADP.2015-10-15T12:53:33.873.fits	zCOSMOS_BRIGHT_DR3_000816618_ZCMRa74_M2_Q1_3_2.fits	SCIENCE.SPECTRUM	54720
+	- ADP.2015-10-15T12:53:50.953.fits	zCOSMOS_BRIGHT_DR3_000816618_150.481949_2.037169_F814W.fits	ANCILLARY.PREVIEW	239040
+	- ADP.2015-10-15T12:47:56.617.jpg	zCOSMOS_BRIGHT_DR3_000816618_150.481949_2.037169_F814W.jpg	ANCILLARY.PREVIEW	17053

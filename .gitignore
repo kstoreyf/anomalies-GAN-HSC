@@ -18,3 +18,6 @@ old/
 results
 **/fits_images
 notebooks/
+**/.DS_store
+.ipynb_checkpoints/
+.vscode
