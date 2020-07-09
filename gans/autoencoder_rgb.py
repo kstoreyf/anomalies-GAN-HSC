@@ -33,40 +33,50 @@ import tflib.datautils
 import utils
 
 
-DIM = 64
+DIM = 64 #dimension of autoencoder convolutions
 #DIM = 2
 NSIDE = 96
-IMAGE_DIM = NSIDE*NSIDE
+NBANDS = 3
+IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 32
-ITERS = 10000 # How many generator iterations to train for
-SAMPLE_ITERS = 100 # Multiples at which to generate image sample
-SAVE_ITERS = 1000
+ITERS = 10000#10000 # How many generator iterations to train for
+SAMPLE_ITERS = 500 #100 # Multiples at which to generate image sample
+SAVE_ITERS = 500 #1000 # Multiples at which to save the autoencoder state
 overwrite = True
-LATENT_DIM = 64
+LATENT_DIM = 2
 
-tag = 'i20.0_norm_100k_features0.05go'
+#tag = 'i20.0_norm_100k_features0.05go'
+tag = 'gri_cosmos_fix'
+#tag = 'gri_100k'
 results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
-results_fn = f'{results_dir}/results_{tag}.npy'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
-savetag = '_latent32_lr1e-2'
+#results_dir = '/archive/k/ksf293/kavli/anomaly/results'
+results_fn = f'{results_dir}/results_{tag}.h5'
+#results_fn = f'{results_dir}/results_{tag}.npy'
+#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5' # NOTE NEW FORMAT
+#savetag = '_latent32_lr1e-2'
+savetag = '_latent2'
+#savetag = '_aereal'
 
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/autoencoder_{tag}{savetag}/'
+loss_fn = f'{out_dir}/loss.txt'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
-lib.print_model_settings(locals().copy())
+#lib.print_model_settings(locals().copy())
 
 
 def LeakyReLU(x, alpha=0.2):
     return tf.maximum(alpha*x, x)
 
 def AutoEncoder_module():
+    # Inputs are 3D images
     inputs = tf.placeholder(tf.float32, shape=[None, IMAGE_DIM])
-    output = tf.reshape(inputs, [-1, 1, 96, 96])
+    output = tf.reshape(inputs, [-1, NBANDS, NSIDE, NSIDE])
     
     # Compression
     # 96x96
-    output = lib.ops.conv2d.Conv2D('AutoEncoder.1', 1, DIM,5,output,stride=2)
+    output = lib.ops.conv2d.Conv2D('AutoEncoder.1', NBANDS, DIM,5,output,stride=2)
     output = tf.nn.relu(output)
     #48x48
     output = lib.ops.conv2d.Conv2D('AutoEncoder.2', DIM, 2*DIM, 5, output, stride=2)
@@ -86,14 +96,15 @@ def AutoEncoder_module():
     output_latent = tf.layers.dense(output, LATENT_DIM, activation=None)
     
     #tf.Print(output_latent)
-    print(output_latent)
+    #print(output_latent)
+    # Outputs are latent-space representations of images
     hub.add_signature(inputs=inputs, outputs=output_latent, name='latent')
 
     # Decompressioin
     #output = tf.reshape(
     activation = None
-    output = tf.layers.dense(output_latent, DIM*6*6, use_bias=False, activation=activation)
-    output = tf.reshape(output, [-1, DIM, 6, 6])
+    output = tf.layers.dense(output_latent, DIM*6*6, use_bias=False, activation=activation) #should this be DIM*6*6*8? bc 8*DIM in last conv layer; see discriminator / generator
+    output = tf.reshape(output, [-1, DIM, 6, 6]) #not sure if need to change for RGB
     
     output = lib.ops.deconv2d.Deconv2D('AutoEncoder.6', DIM, 4*DIM, 5, output)
     output = tf.nn.relu(output)
@@ -104,11 +115,12 @@ def AutoEncoder_module():
     output = lib.ops.deconv2d.Deconv2D('AutoEncoder.8', 2*DIM, DIM, 5, output)
     output = tf.nn.relu(output)
     
-    output = lib.ops.deconv2d.Deconv2D('AutoEncoder.9', DIM, 1, 5, output)
+    output = lib.ops.deconv2d.Deconv2D('AutoEncoder.9', DIM, NBANDS, 5, output)
     output = tf.nn.relu(output)
 
     output = tf.reshape(output, [-1, IMAGE_DIM])
 
+    # inputs are latent representation, outputs are reconstructed images
     hub.add_signature(inputs=output_latent, outputs=output, name='decode_latent')
     hub.add_signature(inputs=inputs, outputs=output)
 
@@ -147,22 +159,37 @@ residuals, reals, recons = utils.get_residuals(reals, recons)
 #data = abs(images-recons)
 #print(data.shape)
 
+#data = residuals
+#data = reals #!!! testing this
+print("Resids")
+print(residuals.shape)
+
+#data = lib.datautils.load(imarr_fn)
+#print("Data")
+#print(data.shape)
+#data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=False)
+
 data = residuals
+data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=False, normalize=False, smooth=False)
+#fixed_im = data[:128] #128 is the number of samples
+fixed_im, _ = data_gen.sample(128)
 
-idxs = range(len(data))
-data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE)
-
-fixed_im = data[:128]
-fixed_im_samples = AutoEncoder(fixed_im.reshape((-1,IMAGE_DIM)))
+fixed_im_samples = AutoEncoder(fixed_im.reshape((-1,IMAGE_DIM))) #fixed latent space rep to test reencoding
+print("Fixed im samples") # dim (128, 27648)
+print(fixed_im_samples.shape)
+fixed_im = fixed_im.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1)
 lib.save_images.save_images(
-        fixed_im.reshape((128, NSIDE, NSIDE)),
-        out_dir+'real.png'
+        fixed_im,
+        out_dir+'real.png',
+        unnormalize=False
     )
 def generate_image(frame):
-    samples = sess.run(fixed_im_samples)
+    samples = sess.run(fixed_im_samples) #waait do i need to load in the decoder part specifically? no, going straight from actuals to decodeds, not saving latent 
+    samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1)
     lib.save_images.save_images(
-        samples.reshape((128, NSIDE, NSIDE)),
-        out_dir+'samples_{}.png'.format(frame)
+        samples,
+        out_dir+'samples_{}.png'.format(frame),
+        unnormalize=False
     )
 
 with tf.Session() as sess:
@@ -175,7 +202,8 @@ with tf.Session() as sess:
             [loss, ae_optimizer],
             feed_dict={residual_orig: _data}
         )
-        lib.plot.plot(out_dir+'autoencoder loss', _loss)
+        if iteration >= 100:
+            lib.plot.plot(out_dir+'autoencoder loss', _loss)
 
         if (iteration < 5):
             lib.plot.flush()
