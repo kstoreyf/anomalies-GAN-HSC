@@ -15,9 +15,9 @@ def save_images(X, save_path, luptonize=False, unnormalize=True):
     # [0, 1] -> [0,255]
     if luptonize:
         unnormalize = False 
-    print(X.ndim)
-    print(X.shape)
-    print(np.max(X.flatten()), np.min(X.flatten()))
+    #print(X.ndim)
+    #print(X.shape)
+    #print(np.max(X.flatten()), np.min(X.flatten()))
     #if isinstance(X.flatten()[0], np.floating):
     #    X = (255.99*X).astype('uint8')
 
@@ -55,9 +55,9 @@ def save_images(X, save_path, luptonize=False, unnormalize=True):
             x = make_lupton_rgb(x[:,:,2], x[:,:,1], x[:,:,0],
                          Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)    
         #x = np.roll(x, 1, axis=2)
-        if n==0:
-            print(x.shape)
-            print(x[40:-40,40:-40])
+        #if n==0:
+        #    print(x.shape)
+        #    print(x[40:-40,40:-40])
         #x = np.roll(x, 1, axis=2)
         img[int(j*h):int(j*h+h), int(i*w):int(i*w+w)] = x
     imwrite(save_path, img)

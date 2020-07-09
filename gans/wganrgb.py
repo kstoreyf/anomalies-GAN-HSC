@@ -124,28 +124,29 @@ def Generator_module():
 def Discriminator_module():
     inputs = tf.placeholder(tf.float32, shape=[None, OUTPUT_DIM])
     output = tf.reshape(inputs, [-1, NBANDS, NSIDE, NSIDE])
-
+    
+    #96x96
     output = lib.ops.conv2d.Conv2D('Discriminator.1',NBANDS,DIM,5,output,stride=2)
     output = LeakyReLU(output)
-
+    #48x48
     output = lib.ops.conv2d.Conv2D('Discriminator.2', DIM, 2*DIM, 5, output, stride=2)
     if batchnorm:
         output = lib.ops.batchnorm.Batchnorm('Discriminator.BN2', [0,3,2], output)
     output = LeakyReLU(output)
-
+    #24x24
     output = lib.ops.conv2d.Conv2D('Discriminator.3', 2*DIM, 4*DIM, 5, output, stride=2)
     if batchnorm:
         output = lib.ops.batchnorm.Batchnorm('Discriminator.BN3', [0,3,2], output)
     output = LeakyReLU(output)
-
+    #12x12
     output = lib.ops.conv2d.Conv2D('Discriminator.4', 4*DIM, 8*DIM, 5, output, stride=2)
     if batchnorm:
         output = lib.ops.batchnorm.Batchnorm('Discriminator.BN4', [0,3,2], output)
     output = LeakyReLU(output)
-    
+    #6x6
     hub.add_signature(inputs=inputs, outputs=output, name='feature_match')
 
-    output = tf.reshape(output, [-1, 8*6*6*DIM])
+    output = tf.reshape(output, [-1, 8*6*6*DIM]) # the 8 here matches the 8xDIM in the last conv step
     output = lib.ops.linear.Linear('Discriminator.Output', 8*6*6*DIM, 1, output)
 
     tf.reshape(output, [-1])
