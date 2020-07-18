@@ -29,8 +29,8 @@ def get_results(result_fn, imarr_fn, n_anoms=0, sigma=0):
     print("Loading results")    
     res = h5py.File(result_fn)
     imarr = h5py.File(imarr_fn)
-    
-    if sigma:
+    print("sigma", sigma)
+    if sigma>0:
         scores = res['anomaly_scores']
         mean = np.mean(scores)
         std = np.std(scores)
@@ -68,3 +68,28 @@ def get_residuals(reals, recons):
     recons = recons.reshape((-1,96,96,NBANDS)).astype('int')
     resids = abs(reals-recons)
     return resids, reals, recons
+
+
+def get_autoencoded(auto_fn, n_anoms=0, sigma=0):
+    auto = np.load(auto_fn, allow_pickle=True)
+    latents = auto[:,0]
+    idxs = auto[:,1]
+    scores = auto[:,2]
+    if sigma>0:
+        mean = np.mean(scores)
+        std = np.std(scores)
+        n_anoms = len([s for s in scores if s>mean+sigma*std])
+        print(f"Number of {sigma}-sigma anomalies: {n_anoms}")
+        if n_anoms==0:
+            raise ValueError(f"No {sigma}-sigma anomalies")
+    
+    if n_anoms>0:
+        idx_sorted = np.argsort(scores)
+        sample = list(idx_sorted[-n_anoms:])
+        latents = [latents[s] for s in sample]
+        idxs = [idxs[s] for s in sample]
+        scores = [scores[s] for s in sample]
+    if type(latents) is not list:
+        latents = latents.tolist()
+    return latents, idxs, scores
+

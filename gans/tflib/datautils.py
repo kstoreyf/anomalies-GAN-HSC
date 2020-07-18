@@ -61,6 +61,10 @@ class DataGenerator():
         
     def reset_indices_and_reshuffle(self, force=False):
         """Reset indices and reshuffle images when needed."""
+        # Don't shuffle if only want to go thru once; set to done if last index
+        if self.once and self.i == self.n_data-1:
+            self.is_done = True
+
         if self.i == self.n_data or force:
             print("Resetting indices")
             if self.shuffle:
@@ -75,10 +79,6 @@ class DataGenerator():
             
             # don't reset the first time
             if not force:
-                if self.once:
-                    print("DONE")
-                    self.is_done = True
-                    self.i = self.n_data #this will break things, shouldn't be called
                 self.i = 0
 
     def get_indices(self):
@@ -101,11 +101,10 @@ class DataGenerator():
         y = np.zeros((self.batch_size,))
         for i in range(self.batch_size):
             xi, yi = self.next_one()
-            if xi is not None:
-                x[i], y[i] = xi, yi
-            else:
-                x = x[:i]
-                y = y[:i]
+            x[i], y[i] = xi, yi
+            if self.is_done: # done if this index is the last and only want to go thru once
+                x = x[:i+1] # the +1 includes the last one
+                y = y[:i+1]
                 break   
         return x,y
     
@@ -114,25 +113,15 @@ class DataGenerator():
         """Get next 1 image."""
         # reset index, reshuffle if necessary
         self.reset_indices_and_reshuffle()  
-        if self.is_done:
-            print("returning")
-            return None, None
-        # get next x
-        #x = self.x[self.index[self.i]].copy()
         idx = self.index[self.i]
-        #ss = time.time()
         x = self.x[idx].copy()
-        #ee = time.time()
-        #print(self.i)
-        #print(idx)
-        #print(f"t {ee-ss}") 
         y = self.y[idx]
         x = self.process_image(x)      
         self.i += 1  # increment counter
         return x, y
    
     def sample(self, n):
-        """Get next 1 image."""
+        """Get sample of size n."""
         # reset index, reshuffle if necessary
         #self.reset_indices_and_reshuffle()
         x = np.zeros((n, self.x_shape))

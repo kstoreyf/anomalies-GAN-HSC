@@ -39,15 +39,15 @@ NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 32
-ITERS = 10000#10000 # How many generator iterations to train for
+ITERS = 30000#10000 # How many generator iterations to train for
 SAMPLE_ITERS = 500 #100 # Multiples at which to generate image sample
 SAVE_ITERS = 500 #1000 # Multiples at which to save the autoencoder state
 overwrite = True
-LATENT_DIM = 2
+LATENT_DIM = 16
 
-#tag = 'i20.0_norm_100k_features0.05go'
-tag = 'gri_cosmos_fix'
-#tag = 'gri_100k'
+#tag = 'gri_3sig'
+#tag = 'gri_cosmos_fix'
+tag = 'gri_100k'
 results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
 #results_dir = '/archive/k/ksf293/kavli/anomaly/results'
 results_fn = f'{results_dir}/results_{tag}.h5'
@@ -55,7 +55,7 @@ results_fn = f'{results_dir}/results_{tag}.h5'
 #imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5' # NOTE NEW FORMAT
 #savetag = '_latent32_lr1e-2'
-savetag = '_latent2'
+savetag = f'_latent{LATENT_DIM}_real'
 #savetag = '_aereal'
 
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/autoencoder_{tag}{savetag}/'
@@ -64,7 +64,6 @@ if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
 #lib.print_model_settings(locals().copy())
-
 
 def LeakyReLU(x, alpha=0.2):
     return tf.maximum(alpha*x, x)
@@ -148,30 +147,10 @@ reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_res
                                                     results_fn, imarr_fn)
 residuals, reals, recons = utils.get_residuals(reals, recons)
 
-#res = lib.datautils.load_numpy(results_fn)
-#res = np.load(results_fn, allow_pickle=True)
-#images = res[:,0]
-#images = np.array([np.array(im) for im in images])
-#images = images.reshape((-1, NSIDE, NSIDE))
-#recons = res[:,1]
-#recons = np.array([np.array(im) for im in recons])
-#recons = recons.reshape((-1, NSIDE, NSIDE))
-#data = abs(images-recons)
-#print(data.shape)
-
 #data = residuals
-#data = reals #!!! testing this
-print("Resids")
-print(residuals.shape)
-
-#data = lib.datautils.load(imarr_fn)
-#print("Data")
-#print(data.shape)
-#data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=False)
-
-data = residuals
+print("AUTOENCODING REALS (NOT RESIDUALS)")
+data = reals
 data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=False, normalize=False, smooth=False)
-#fixed_im = data[:128] #128 is the number of samples
 fixed_im, _ = data_gen.sample(128)
 
 fixed_im_samples = AutoEncoder(fixed_im.reshape((-1,IMAGE_DIM))) #fixed latent space rep to test reencoding
@@ -184,7 +163,7 @@ lib.save_images.save_images(
         unnormalize=False
     )
 def generate_image(frame):
-    samples = sess.run(fixed_im_samples) #waait do i need to load in the decoder part specifically? no, going straight from actuals to decodeds, not saving latent 
+    samples = sess.run(fixed_im_samples)
     samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1)
     lib.save_images.save_images(
         samples,
