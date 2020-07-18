@@ -34,13 +34,15 @@ path_dict = dict(
     galaxies='data/images_h5/'
 )
 
-#tag = 'gri_3sig'
-tag = 'gri_cosmos'
+tag = 'gri_3sig'
+#tag = 'gri_cosmos'
+#tag = 'gri_cosmos'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
 results_path = 'results/'
 umaps_path = 'umaps/'
 info_fn = 'data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
+autotag = '_model29500_latent32'
 
 UPDATE_CIRCLE_SIZE = False
 
@@ -53,8 +55,14 @@ def sdss_link(SpecObjID):
 def get_umaps(self, path, embedding=None):
     #return {p: np.load(os.path.join(path, p)) for p in np.sort(os.listdir(path)) if '.npy' in p}
     # for now, return random coordinates
-    
+
     embedding_dict = {'umap_images': self.ims_gal, 'umap_residuals': self.resids_gal}
+
+    if 'auto' in embedding:
+        auto_fn = os.path.join(results_path, f'autoencodes/autoencoded_{tag}{autotag}.npy')
+        auto_all = np.load(auto_fn, allow_pickle=True)   
+        autos = [auto[0] for auto in auto_all]
+        embedding_dict[embedding] = autos 
 
     umap_dict = {}
 
@@ -156,7 +164,7 @@ def reverse_galaxy_links(galaxy_links):
 
 def load_score_data(idxs_data):
     print("Score data")
-    print(idxs_data)
+    #print(idxs_data)
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
     N = len(res['idxs'])
@@ -177,19 +185,19 @@ def load_score_data(idxs_data):
         d_score[i] = res['disc_scores'][resloc]
         recon.append(res['reconstructed'][resloc])
 
-    print(res.keys())
+    #print(res.keys())
     score_dict = {'Anomaly Score': a_score,
                   'Generator Score': g_score,
                   'Discriminator Score': d_score}
-    print("a score:")
-    print(a_score)
+    #print("a score:")
+    #print(a_score)
     return score_dict, recon
 
 @lrudecorator(100)
 def get_score_data(field, idxs_data):
     print("Score data")
-    print(field)
-    print(idxs_data)
+    #print(field)
+    #print(idxs_data)
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
     N = len(res['idxs'])
@@ -208,12 +216,12 @@ def get_score_data(field, idxs_data):
         g_score[i] = res['gen_scores'][resloc]
         d_score[i] = res['disc_scores'][resloc]
 
-    print(res.keys())
+    #print(res.keys())
     score_dict = {'Anomaly Score': a_score,
                   'Generator Score': g_score,
                   'Discriminator Score': d_score}
-    print("a score:")
-    print(a_score)
+    #print("a score:")
+    #print(a_score)
     return score_dict[field]
     # return {
     #     #"Anomaly Score": np.load(os.path.join(gmm_pca_dir, 'fv_score.npy')),
@@ -342,9 +350,9 @@ def get_decimated_region_points(x_min, x_max, y_min, y_max, datasource, DECIMATE
     if len(is_in_box_inds) < DECIMATE_NUMBER:
         return is_in_box_inds
     random_objects_ = np.random.choice(is_in_box_inds, DECIMATE_NUMBER, replace=False)
-    print(datasource)
-    print(datasource['names'])
-    print(datasource.keys())
+    #print(datasource)
+    #print(datasource['names'])
+    #print(datasource.keys())
     random_objects = [datasource['names'][r] for r in random_objects_]
     return random_objects
 
@@ -404,7 +412,7 @@ class astro_web(object):
         self.N = len(self.ims_gal)
         self.imsize = [self.ims_gal[0].shape[0], self.ims_gal[0].shape[1]]
         self.reverse_galaxy_links = reverse_galaxy_links(self.galaxy_links)
-        self.umap_data = get_umaps(self, umaps_path, embedding='umap_images')
+        self.umap_data = get_umaps(self, umaps_path, embedding='umap_auto')
         self.color_mapper = LinearColorMapper(palette=Viridis256, low=0, high=1, nan_color=RGB(220, 220, 220, a = 0.1))
         self.high_colormap_factor = 0.1
         self.R_DOT = 10
@@ -664,7 +672,7 @@ class astro_web(object):
 
     def generate_sources(self):
 
-        print(self.galaxy_links)
+        #print(self.galaxy_links)
         #sd = load_score_data(self.select_score.value, self.galaxy_links)
         sd = self.sd_dict[self.select_score.value]
         self.set_colormap(sd)
@@ -906,7 +914,7 @@ class astro_web(object):
                 selected_inds = np.array([int(s) for s in selected_objects])
                 order = np.array([float(o) for o in self.selected_objects.data['order']])
                 custom_sd[selected_inds] = order
-                print(np.max(custom_sd))
+                #print(np.max(custom_sd))
                 self.set_colormap(custom_sd)
                 self.get_new_view_keep_selected(background_objects, selected_objects, custom_sd = custom_sd)
             else:
@@ -1104,7 +1112,7 @@ class astro_web(object):
                 count += 1
                 continue 
             ind = selected_inds[count]
-            print(ind)
+            #print(ind)
             im = process_image(self.ims_gal[ind])
             #im = self.ims_gal[ind]
             source = ColumnDataSource(
@@ -1112,7 +1120,7 @@ class astro_web(object):
             )
             self.stacks_sources.append(source)
             count += 1
-        print(self.stacks_sources)
+        #print(self.stacks_sources)
 
         xsize, ysize = self.imsize
         im = process_image(self.ims_gal[0])
@@ -1179,7 +1187,7 @@ class astro_web(object):
             specobjid = str(self.search_galaxy.value)
             new_specobjid = str(int(self.galaxy_links[int(index)]))
             logger.debug(type(specobjid), specobjid, type(new_specobjid), new_specobjid)
-            print(specobjid, new_specobjid)
+            #print(specobjid, new_specobjid)
             if specobjid != new_specobjid:
                 print('not equal')
                 self.search_galaxy.value = new_specobjid
@@ -1198,7 +1206,7 @@ class astro_web(object):
             if ',' in specobjid_str:
                 print('list input')
                 selected_objects_ids = specobjid_str.replace(' ','').split(',')
-                print(selected_objects_ids)
+                #print(selected_objects_ids)
                 index_str = str(self.reverse_galaxy_links[selected_objects_ids[0]])
                 for idx, specobjid in enumerate(selected_objects_ids[1:]):
                     index_str = '{}, {}'.format(index_str, str(self.reverse_galaxy_links[specobjid]))
