@@ -26,21 +26,24 @@ import h5py
 from astropy.visualization import make_lupton_rgb
 import umap
 
-logger = logging.getLogger(__name__)
+# The logger causes the __init__ function of astro_web to be called twice.
+# Not using it now, so comment out
+#logger = logging.getLogger(__name__)
 
 
 path_dict = dict(
     #galaxies='galaxies/data/',
-    galaxies='data/images_h5/'
+    #galaxies='data/images_h5/'
+    galaxies='results/'
 )
 
-tag = 'gri_3sig'
-#tag = 'gri_cosmos'
-#tag = 'gri_cosmos'
+#tag = 'gri_3sig'
+tag = 'gri_cosmos'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
 results_path = 'results/'
-umaps_path = 'umaps/'
+#umaps_path = 'umaps/'
+umaps_path = 'results/embeddings'
 info_fn = 'data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
 autotag = '_model29500_latent32'
 
@@ -51,8 +54,23 @@ def sdss_link(SpecObjID):
     return 'http://skyserver.sdss.org/dr14/en/tools/explore/summary.aspx?sid={}&apid='.format(int(SpecObjID))
 
 
-
 def get_umaps(self, path, embedding=None):
+    print(f"Loading embeddings {os.listdir(path)}")
+    # Embeddings as made by make_umap_rgb.py
+    umap_dict = {}
+    for p in np.sort(os.listdir(path)):
+        # Load all embeddings with the overall tag
+        if tag in p:
+            fn = os.path.join(path, p)
+            e1, e2, colorby, idxs = np.load(fn, allow_pickle=True)
+            # Should check that the idxs are the same; for now, assume they are (I checked on these!)
+            emb_name = get_embedding_name(p)
+            umap_dict[emb_name] = np.array([e1, e2]).T 
+    return umap_dict  
+
+
+# IF THE ABOVE WORKS, DELETE THIS
+def get_umaps_old(self, path, embedding=None):
     #return {p: np.load(os.path.join(path, p)) for p in np.sort(os.listdir(path)) if '.npy' in p}
     # for now, return random coordinates
 
@@ -124,74 +142,49 @@ def load_emission_absorption_lines():
     return lines
 
 
-#load_emission_absorption_lines()
-
-
 @lrudecorator(5)
 def load_data(data_path):
-    logger.info('Started Loading')
-    #data = [np.load(os.path.join(data_path, p)) for p in ['specs.npy', 'wave.npy', 'specobjids.npy']]
-    data_fn = os.path.join(data_path, f'images_{tag}.h5')
-    imarr = h5py.File(data_fn, 'r')
-    logger.info('Ended Loading')
+    print("Loading data")
+    #logger.info('Started Loading')
+    data_fn = os.path.join(data_path, f'results_{tag}.h5')
+    res = h5py.File(data_fn, 'r')
+    #logger.info('Ended Loading')
 
-    idx2imloc = {}
-    for i in range(len(imarr['idxs'])):
-        idx2imloc[int(imarr['idxs'][i])] = i
+    data = res["reals"]
+    #idxs = res["idxs"]
+    idxs = [int(idx) for idx in res['idxs'][:]]
 
-    # object ids in imarr and res are corrupt!
-    data = []
-    idxs = imarr['idxs'][:]
-    for i in range(len(idxs)):
-        idx = int(idxs[i])
-        im = imarr['images'][idx2imloc[idx]]
-        im = luptonize(im)
-        data.append(im)
-
+    print("Getting object ids")
     # read object ids from file; might want other data from here eventually
+    # TODO: reading this takes a good bit! should save to res file
     info_df = pd.read_csv(info_fn)
     print("Read in info file {} with {} rows".format(info_fn, len(info_df)))
     info_df = info_df.set_index('Unnamed: 0')
-    object_ids = [str(info_df['object_id'].loc[int(idxs[i])]) for i in range(len(idxs))]
-    checkval = info_df['object_id'].loc[262890]
-    
+    object_ids = [str(info_df['object_id'].loc[idx]) for idx in idxs]    
     return data, idxs, object_ids
+
+
 
 # makes a dictionary of info_ids to indices
 def reverse_galaxy_links(galaxy_links):
     gl = galaxy_links
     return {str(int(gl[v])): str(v) for v in range(len(gl))}
 
+
 def load_score_data(idxs_data):
     print("Score data")
     #print(idxs_data)
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
-    N = len(res['idxs'])
 
-    idx2resloc = {}
-    for i in range(N):
-        idx2resloc[res['idxs'][i]] = i
+    score_dict = {'Anomaly Score': res['anomaly_scores'][:],
+                  'Generator Score': res['gen_scores'][:],
+                  'Discriminator Score': res['disc_scores'][:]}
+    recon = res['reconstructed'][:]
 
-    a_score = np.empty(N)
-    g_score = np.empty(N)
-    d_score = np.empty(N)
-    recon = []
-    for i in range(len(idxs_data)):
-        idx = idxs_data[i]
-        resloc = idx2resloc[idx]
-        a_score[i] = res['anomaly_scores'][resloc]
-        g_score[i] = res['gen_scores'][resloc]
-        d_score[i] = res['disc_scores'][resloc]
-        recon.append(res['reconstructed'][resloc])
-
-    #print(res.keys())
-    score_dict = {'Anomaly Score': a_score,
-                  'Generator Score': g_score,
-                  'Discriminator Score': d_score}
-    #print("a score:")
-    #print(a_score)
+    print("Done with score data")
     return score_dict, recon
+
 
 @lrudecorator(100)
 def get_score_data(field, idxs_data):
@@ -390,8 +383,6 @@ def ladder_plot_smooth(spectra_matrix, indecies_to_plot, order_by, nof_spectra, 
 def rgb2hex(rgb):
     return '#{:02x}{:02x}{:02x}'.format(rgb(0),rgb(1),rgb(2))
 
-#def compute_resids(ims, recons):
-#    return ims - recons
 
 def get_residuals(reals, recons):
     print("Getting residuals")
@@ -408,7 +399,7 @@ class astro_web(object):
         #self.specs_gal, self.wave, self.galaxy_links = load_data(data_path)
         self.ims_gal, self.galaxy_links, self.object_ids = load_data(data_path)
         self.sd_dict, self.recons_gal = load_score_data(self.galaxy_links)
-        self.resids_gal = get_residuals(self.ims_gal, self.recons_gal)
+        #self.resids_gal = get_residuals(self.ims_gal, self.recons_gal)
         self.N = len(self.ims_gal)
         self.imsize = [self.ims_gal[0].shape[0], self.ims_gal[0].shape[1]]
         self.reverse_galaxy_links = reverse_galaxy_links(self.galaxy_links)
@@ -674,6 +665,7 @@ class astro_web(object):
 
         #print(self.galaxy_links)
         #sd = load_score_data(self.select_score.value, self.galaxy_links)
+        # sd = score data
         sd = self.sd_dict[self.select_score.value]
         self.set_colormap(sd)
         print('generate sources')
@@ -956,29 +948,6 @@ class astro_web(object):
             """))
 
 
-    if False:
-        def get_order_callback(self):
-
-            print('get_order_callback')
-            selected_objects = self.selected_objects.data['index']
-            score = self.selected_objects.data['score']
-            if len(selected_objects) > 2:
-                order = get_order_from_umap(self.umap_source.data, selected_objects)
-                #print(order.shape)
-                self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-                self.selected_galaxies_source.data = self.selected_objects.data
-                #self.update_table.value = str(np.random.rand())
-            return
-
-    if False:
-        def save_selected_callback(self):
-
-            selected_inds = self.selected_objects.data['index']
-            #print(selected_inds)
-            np.save('/Users/itamar/git/astro/spectra_maps_web/temp/selected_inds', selected_inds)
-            return
-
-
     def reset_stack_index(self):
         self.stack_index = 0
 
@@ -997,6 +966,7 @@ class astro_web(object):
         if self.stack_index != 0:
             self.stack_index -= self.ncol*self.nrow
             self.stacks_callback()
+
 
     # TODO: can this be simplified?
     def select_stacks_callback(self):
@@ -1186,7 +1156,7 @@ class astro_web(object):
             print('galaxy callback')
             specobjid = str(self.search_galaxy.value)
             new_specobjid = str(int(self.galaxy_links[int(index)]))
-            logger.debug(type(specobjid), specobjid, type(new_specobjid), new_specobjid)
+            #logger.debug(type(specobjid), specobjid, type(new_specobjid), new_specobjid)
             #print(specobjid, new_specobjid)
             if specobjid != new_specobjid:
                 print('not equal')
@@ -1201,7 +1171,7 @@ class astro_web(object):
     def search_galaxy_callback(self):
         print('search gal')
         def callback(attr, old, new):
-            logger.debug(self.search_galaxy.value)
+            #logger.debug(self.search_galaxy.value)
             specobjid_str = str(self.search_galaxy.value)
             if ',' in specobjid_str:
                 print('list input')
@@ -1219,7 +1189,7 @@ class astro_web(object):
                 new_index = str(self.reverse_galaxy_links[specobjid_str])
                 self.update_search_circle(new_index)
                 print('search galaxy - updated circle')
-                logger.debug(type(index), index, type(new_index), new_index)
+                #logger.debug(type(index), index, type(new_index), new_index)
                 if index != new_index:
                     self.select_galaxy.value = new_index
                 else:
@@ -1599,46 +1569,15 @@ class astro_web(object):
 
 
 
-#x = load_data(data_path)
-#idxs_ = x[1]
-
 def get_astro_session(doc):
     sess = astro_web(data_type, data_path)
     return sess(doc)
 
-
+# This is necessary for displaying image properly
 def process_image(im):
-    #im = luptonize(im)
     alpha = np.full((im.shape[0], im.shape[1], 1), 255)
     im = np.concatenate((im, alpha), axis=2)
     return im.astype(np.uint8)
-
-
-def luptonize(x):
-    rgb_q = 15
-    rgb_stretch = 0.5
-    rgb_min = 0
-    if x.ndim==3:
-        x = make_lupton_rgb(x[:,:,2], x[:,:,1], x[:,:,0],
-                      Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
-    elif x.ndim==4:
-        x = np.array([make_lupton_rgb(xi[:,:,2], xi[:,:,1], xi[:,:,0],
-                      Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
-                      for xi in x])
-    else:
-        raise ValueError(f"Wrong number of dimensions! Gave {x.ndim}, need 3 or 4")
-    return x
-
-def umap_embedding(values):
-    values = np.array(values)
-    Nv = values.shape[0]
-    print(f"Embedding {Nv} values of shape {values[0].shape}")
-    values = values.reshape((Nv, -1))
-    reducer = umap.UMAP(n_neighbors=5, min_dist=0.05)
-    embedding = reducer.fit_transform(values)
-    # for N values, embedding has shape (N, 2) where the 2 is x and y coords
-    print("Done embedding!")
-    return embedding
 
 
 # a = astro_web(data_type, data_path)
@@ -1648,6 +1587,7 @@ if __name__ == '__main__':
 
     server = Server({'/galaxies': get_astro_session}, num_procs=0,
                     allow_websocket_origin=['localhost:{}'.format(lh)], show=False)
-    server.start()
+    server.start() # this line doesn't seem to do anything, but also doesn't hurt...
+    # KSF: found this code here, but not sure what it's doing https://riptutorial.com/bokeh/example/29716/local-bokeh-server-with-console-entry-point
     # server.io_loop.add_callback(server.show, "/")
     server.io_loop.start()
