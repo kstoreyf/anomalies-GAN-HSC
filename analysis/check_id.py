@@ -15,10 +15,11 @@ from unagi.task import hsc_tricolor, hsc_cutout
 from utils import luptonize
 
 
-#tag = 'gri_cosmos_fix'
-tag = 'gri_3sig'
+tag = 'gri_cosmos'
+#tag = 'gri_3sig'
 #idx_tocheck = 937431
-idx_tocheck = 406992
+#idx_tocheck = 406992
+idx_tocheck = 935811
 save_dir = '../thumbnails/id_check'
 
 #cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_cosmos.csv'
