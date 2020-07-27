@@ -26,12 +26,14 @@ import h5py
 from astropy.visualization import make_lupton_rgb
 import umap
 
-logger = logging.getLogger(__name__)
+# The logger causes the __init__ function of astro_web to be called twice.
+# Not using it now, so comment out
+#logger = logging.getLogger(__name__)
 
 
 path_dict = dict(
-    #galaxies='galaxies/data/',
-    galaxies='data/images_h5/'
+    #galaxies='data/images_h5/'
+    galaxies='results/'
 )
 
 #tag = 'gri_3sig'
@@ -39,7 +41,7 @@ tag = 'gri_cosmos'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
 results_path = 'results/'
-umaps_path = 'umaps/'
+umaps_path = 'results/embeddings'
 info_fn = 'data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
 
 UPDATE_CIRCLE_SIZE = False
@@ -49,47 +51,19 @@ def sdss_link(SpecObjID):
     return 'http://skyserver.sdss.org/dr14/en/tools/explore/summary.aspx?sid={}&apid='.format(int(SpecObjID))
 
 
-
 def get_umaps(self, path, embedding=None):
-    #return {p: np.load(os.path.join(path, p)) for p in np.sort(os.listdir(path)) if '.npy' in p}
-    # for now, return random coordinates
-    
-    embedding_dict = {'umap_images': self.ims_gal, 'umap_residuals': self.resids_gal}
-
-    umap_dict = {}
-
-    umin, umax = 0, 10
-    coords_rand = [[np.random.rand()*(umax-umin)+umin, 
-            np.random.rand()*(umax-umin)+umin] 
-            for i in range(self.N)]
-    coords_rand = np.array(coords_rand)
-    umap_dict['random'] = coords_rand
-
-    if embedding is None:
-        embed = False
-    else:
-        embed = True
-    
     print(f"Loading embeddings {os.listdir(path)}")
+    # Embeddings as made by make_umap_rgb.py
+    umap_dict = {}
     for p in np.sort(os.listdir(path)):
+        # Load all embeddings with the overall tag
         if tag in p:
-            coords = np.load(os.path.join(path, p))
-            umap_dict[get_embedding_name(p)] = coords
-            if embedding in p:
-                embed = False
-
-    if embed:
-        efn = os.path.join(path, f'{embedding}_{tag}.npy')
-        try:
-            values = embedding_dict[embedding]
-        except KeyError:
-            raise ValueError('Embedding {embedding} not recognized')
-        coords_im = umap_embedding(values)
-        print("Saving embedding")
-        np.save(efn, coords_im)
-        umap_dict[embedding] = coords_im
-
-    return umap_dict
+            fn = os.path.join(path, p)
+            e1, e2, colorby, idxs = np.load(fn, allow_pickle=True)
+            # Should check that the idxs are the same; for now, assume they are (I checked on these!)
+            emb_name = get_embedding_name(p)
+            umap_dict[emb_name] = np.array([e1, e2]).T 
+    return umap_dict  
 
 
 def filename_params(filename, params='', extension='.npy'):
@@ -116,80 +90,50 @@ def load_emission_absorption_lines():
     return lines
 
 
-#load_emission_absorption_lines()
-
-
 @lrudecorator(5)
 def load_data(data_path):
-    logger.info('Started Loading')
-    #data = [np.load(os.path.join(data_path, p)) for p in ['specs.npy', 'wave.npy', 'specobjids.npy']]
-    data_fn = os.path.join(data_path, f'images_{tag}.h5')
-    imarr = h5py.File(data_fn, 'r')
-    logger.info('Ended Loading')
+    print("Loading data")
+    #logger.info('Started Loading')
+    data_fn = os.path.join(data_path, f'results_{tag}.h5')
+    res = h5py.File(data_fn, 'r')
+    #logger.info('Ended Loading')
 
-    idx2imloc = {}
-    for i in range(len(imarr['idxs'])):
-        idx2imloc[int(imarr['idxs'][i])] = i
+    data = res["reals"]
+    idxs = [int(idx) for idx in res['idxs'][:]]
 
-    # object ids in imarr and res are corrupt!
-    data = []
-    idxs = imarr['idxs'][:]
-    for i in range(len(idxs)):
-        idx = int(idxs[i])
-        im = imarr['images'][idx2imloc[idx]]
-        im = luptonize(im)
-        data.append(im)
-
+    print("Getting object ids")
     # read object ids from file; might want other data from here eventually
+    # TODO: reading this takes a good bit - slowest part of init! should save to res file
     info_df = pd.read_csv(info_fn)
     print("Read in info file {} with {} rows".format(info_fn, len(info_df)))
     info_df = info_df.set_index('Unnamed: 0')
-    object_ids = [str(info_df['object_id'].loc[int(idxs[i])]) for i in range(len(idxs))]
-    checkval = info_df['object_id'].loc[262890]
-    
+    object_ids = [str(info_df['object_id'].loc[idx]) for idx in idxs]    
     return data, idxs, object_ids
+
 
 # makes a dictionary of info_ids to indices
 def reverse_galaxy_links(galaxy_links):
     gl = galaxy_links
     return {str(int(gl[v])): str(v) for v in range(len(gl))}
 
+
 def load_score_data(idxs_data):
     print("Score data")
-    print(idxs_data)
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
-    N = len(res['idxs'])
 
-    idx2resloc = {}
-    for i in range(N):
-        idx2resloc[res['idxs'][i]] = i
+    score_dict = {'Anomaly Score': res['anomaly_scores'][:],
+                  'Generator Score': res['gen_scores'][:],
+                  'Discriminator Score': res['disc_scores'][:]}
+    recon = res['reconstructed'][:]
 
-    a_score = np.empty(N)
-    g_score = np.empty(N)
-    d_score = np.empty(N)
-    recon = []
-    for i in range(len(idxs_data)):
-        idx = idxs_data[i]
-        resloc = idx2resloc[idx]
-        a_score[i] = res['anomaly_scores'][resloc]
-        g_score[i] = res['gen_scores'][resloc]
-        d_score[i] = res['disc_scores'][resloc]
-        recon.append(res['reconstructed'][resloc])
-
-    print(res.keys())
-    score_dict = {'Anomaly Score': a_score,
-                  'Generator Score': g_score,
-                  'Discriminator Score': d_score}
-    print("a score:")
-    print(a_score)
+    print("Done with score data")
     return score_dict, recon
+
 
 @lrudecorator(100)
 def get_score_data(field, idxs_data):
     print("Score data")
-    print(field)
-    print(idxs_data)
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
     N = len(res['idxs'])
@@ -208,66 +152,21 @@ def get_score_data(field, idxs_data):
         g_score[i] = res['gen_scores'][resloc]
         d_score[i] = res['disc_scores'][resloc]
 
-    print(res.keys())
     score_dict = {'Anomaly Score': a_score,
                   'Generator Score': g_score,
                   'Discriminator Score': d_score}
-    print("a score:")
-    print(a_score)
     return score_dict[field]
-    # return {
-    #     #"Anomaly Score": np.load(os.path.join(gmm_pca_dir, 'fv_score.npy')),
-    #     #"Log Probability": np.load(os.path.join(gmm_pca_dir, 'prob_score.npy')),
-    #     #"Random Forest Original": np.load(os.path.join('galaxies/colors', 'RF_orig.npy')),
-    #     #"Random Forest New": np.load(os.path.join('galaxies/colors', 'RF_new.npy')),
-    #     "No color": np.load(os.path.join('galaxies/colors', 'nocolor.npy')),
-    #     "OIII/Hb line ratio": np.load(os.path.join('galaxies/colors', 'OIII_Hb.npy')),
-    #     "NII/Ha line ratio": np.load(os.path.join('galaxies/colors', 'NII_Ha.npy')),
-    #     "Hd EW": np.load(os.path.join('galaxies/colors', 'Hd_EW.npy')),
-    #     #"Continuum": np.load(os.path.join('galaxies/colors', 'continuum.npy')),
-    #     "SFR": np.load(os.path.join('galaxies/colors', 'SFR.npy')),
-    #     "Dispersion velocity": np.load(os.path.join('galaxies/colors', 'V_disp.npy')),
-    #     "Sigma balmer": np.load(os.path.join('galaxies/colors', 'sig_balmer.npy')),
-    #      "Sigma forbidden": np.load(os.path.join('galaxies/colors','sig_forbidden.npy')),
-    #      "Order": np.load(os.path.join('galaxies/colors', 'nocolor.npy')),
-    # }[field]
+
 
 def get_anomalies_dict(idxs_data):
 
-    #results_dir = os.path.join(results_path, f'results_{tag}.h5')
-    #res = h5py.File()
-
-    #anomalies_dict = {'GAN': res['anomaly_scores']}
-    # for now with 3sig anomalies, all are anomalous
-    #anomalies_dict = {'GAN': range(len(idxs_))}
     anomalies_dict = {'GAN': range(len(idxs_data))}
-    # anomalies_dict = {'Favorites':np.load(os.path.join('galaxies/anomalies/favs.npy')),
-    #                 'Isolation Forest':np.load(os.path.join('galaxies/anomalies/isolation_forest_100.npy'))[:51],
-    #                 'Random Forest v1':np.load(os.path.join('galaxies/anomalies/rf_v0_100.npy'))[:51],
-    #                 'Random Forest v2':np.load(os.path.join('galaxies/anomalies/rf_v1_100.npy'))[:51],
-    #                 'PCA reconstruction':np.load(os.path.join('galaxies/anomalies/pca_recon_100.npy'))[:51],
-    #                 #'Joint probability distance':np.load(os.path.join('galaxies/anomalies/pca_recon_100.npy')),
-    #                 'Fisher Vectors':np.load(os.path.join('galaxies/anomalies/fv_top200.npy'))[:51],}
-    #                 #'Low density':np.load(os.path.join('galaxies/anomalies/low_density_100.npy')),}
-
     return anomalies_dict
-
-def get_groups_dict():
-
-    groups_dict = {'Supernove':np.load(os.path.join('galaxies/groups/supernova.npy')),
-                    'Post starburst':np.load(os.path.join('galaxies/groups/post_starburst.npy')),
-                    'White dwarfs':np.load(os.path.join('galaxies/groups/white_dwarfs.npy')),
-                    'Offset AGN':np.load(os.path.join('galaxies/groups/offset_agn.npy')),
-                    #'AGN':np.load(os.path.join('galaxies/groups/agn.npy')),
-                    #'Stra forming':np.load(os.path.join('galaxies/groups/sf.npy')),
-                    }
-
-    return groups_dict
-
 
 
 def get_numbers(u):
     return [int(n) for n in np.concatenate([s.split('-') for s in u.split('_')]) if n.isdigit()]
+
 
 def get_embedding_name(u):
 
@@ -278,11 +177,6 @@ def get_embedding_name(u):
     else:
         name = u
     return name
-
-    #umaps = [u for u in umaps_ if 'umap' in u]
-    #select_umap_menu = [('UMAP {}-{} A'.format(get_numbers(u)[-2], get_numbers(u)[-1]),u) for u in umaps]
-    #select_not_umap_menu = [(nu[:-4].replace('_', ' ', 1),nu) for nu in umaps_ if 'umap' not in nu]
-    #menu_all = select_umap_menu + select_not_umap_menu
 
 
 def get_rank(X_values):
@@ -322,12 +216,12 @@ def get_region_points(x_min, x_max, y_min, y_max, datasource):
     ys = np.array(datasource['ys'])
     cd = datasource['color_data']
     nof_objects = len(cd)
-    #print(nof_objects)
     if True:
         is_in_box = np.logical_and.reduce([xs >= x_min, xs <= x_max, ys >= y_min, ys <= y_max, ys > IGNORE_TH, xs > IGNORE_TH])
     else:
         is_in_box = np.logical_and.reduce([xs >= x_min, xs <= x_max, ys >= y_min, ys <= y_max])
     return np.where(is_in_box)[0]
+
 
 def get_relevant_objects_coords(datasource):
     IGNORE_TH = -999
@@ -336,18 +230,15 @@ def get_relevant_objects_coords(datasource):
     relevant_objects = np.logical_and.reduce([ys > IGNORE_TH, xs > IGNORE_TH])
     return xs[relevant_objects], ys[relevant_objects], relevant_objects
 
+
 def get_decimated_region_points(x_min, x_max, y_min, y_max, datasource, DECIMATE_NUMBER):
     is_in_box_inds = get_region_points(x_min, x_max, y_min, y_max, datasource)
     print('total points before decimation', len(is_in_box_inds))
     if len(is_in_box_inds) < DECIMATE_NUMBER:
         return is_in_box_inds
     random_objects_ = np.random.choice(is_in_box_inds, DECIMATE_NUMBER, replace=False)
-    print(datasource)
-    print(datasource['names'])
-    print(datasource.keys())
     random_objects = [datasource['names'][r] for r in random_objects_]
     return random_objects
-
 
 
 def reorder_spectra_mat(spectra_matrix, indecies_to_plot, order_by):
@@ -363,9 +254,6 @@ def reorder_spectra_mat(spectra_matrix, indecies_to_plot, order_by):
     return plot_matrix
 
 
-
-
-
 def ladder_plot_smooth(spectra_matrix, indecies_to_plot, order_by, nof_spectra, delta=1):
     plot_matrix = reorder_spectra_mat(spectra_matrix.copy(), indecies_to_plot, order_by)
 
@@ -379,32 +267,16 @@ def ladder_plot_smooth(spectra_matrix, indecies_to_plot, order_by, nof_spectra, 
         stacks += [stack]
     return stacks
 
-def rgb2hex(rgb):
-    return '#{:02x}{:02x}{:02x}'.format(rgb(0),rgb(1),rgb(2))
-
-#def compute_resids(ims, recons):
-#    return ims - recons
-
-def get_residuals(reals, recons):
-    print("Getting residuals")
-    reals = np.array(reals)
-    reals = reals.reshape((-1,96,96,3)).astype('int')
-    recons = np.array(recons)
-    recons = recons.reshape((-1,96,96,3)).astype('int')
-    resids = abs(reals-recons)
-    return resids
 
 class astro_web(object):
     def __init__(self, data_type, data_path):
 
-        #self.specs_gal, self.wave, self.galaxy_links = load_data(data_path)
         self.ims_gal, self.galaxy_links, self.object_ids = load_data(data_path)
         self.sd_dict, self.recons_gal = load_score_data(self.galaxy_links)
-        self.resids_gal = get_residuals(self.ims_gal, self.recons_gal)
         self.N = len(self.ims_gal)
         self.imsize = [self.ims_gal[0].shape[0], self.ims_gal[0].shape[1]]
         self.reverse_galaxy_links = reverse_galaxy_links(self.galaxy_links)
-        self.umap_data = get_umaps(self, umaps_path, embedding='umap_images')
+        self.umap_data = get_umaps(self, umaps_path, embedding='umap_auto')
         self.color_mapper = LinearColorMapper(palette=Viridis256, low=0, high=1, nan_color=RGB(220, 220, 220, a = 0.1))
         self.high_colormap_factor = 0.1
         self.R_DOT = 10
@@ -414,7 +286,6 @@ class astro_web(object):
         self.nof_stacks = 1
         self.n_anomalies = 51
         self.stack_by = 'x'
-        #self.stacks_colors = [rgb2hex(   cmap(   i/(self.nof_stacks-1)   )       ) for i in range(self.nof_stacks)]
         self.stacks_colors = ['#fde725', '#90d743', '#35b779', '#21908d', '#31688e', '#443983', '#440154'][::-1]
         self.nrow, self.ncol = 2, 5
 
@@ -435,13 +306,6 @@ class astro_web(object):
                                 self.search_galaxy, self.select_galaxy, 
                                 self.data_figure, self.selected_galaxies_table, self.title_div  
                                 ))))
-        #doc.add_root(column(row(  self.show_anomalies, self.select_anomalies_from,), #row(self.show_group, self.select_group),
-        # row(column(self.umap_figure, self.data_figure, self.link_div, self.stacks_figure),
-        #                  column(self.title_div, #Div(text=""" """),
-        #                         self.select_umap, self.select_score,   #self.save_selected, #self.get_order,
-        #                         self.selected_galaxies_table,  self.search_galaxy, self.select_galaxy,
-        #                         self.get_stacks, self.select_nof_stacks, self.select_stack_by,
-        #                         self.select_spectrum_plot_type, self.select_colormap, self.select_score_table, self.update_table, self.internal_reset))))
         doc.title = 'HSC Galaxies'
 
 
@@ -454,18 +318,6 @@ class astro_web(object):
 
     def generate_buttons(self):
 
-        #self.select_score = Select(title="Color by:", value="Hd EW",
-        #                           options=["OIII_Hb line ratio", "NII_Ha line ratio", "Hd EW"])
-        # select_score_menu = [("No color","No color"),
-        #                       ("Log(OIII/Hb)","OIII/Hb line ratio"),
-        #                       ("Log(NII/Ha)","NII/Ha line ratio"),
-        #                                   ("Hd EW","Hd EW"),
-        #                                   #("Continuum","Continuum"),
-        #                                   ("SFR","SFR"),
-        #                         ("Dispersion velocity","Dispersion velocity"),
-        #                         ("Sigma balmer","Sigma balmer"),
-        #                         ("Sigma forbidden","Sigma forbidden"),
-        #                         ('Order','Order')]
 
         select_score_menu = [('Anomaly Score', 'Anomaly Score'),
                               ('Generator Score', 'Generator Score'),
@@ -495,7 +347,6 @@ class astro_web(object):
                                                    menu = self.cmap_menu , value='viridis')
 
         maps = list(self.umap_data.keys())
-        #menu_all = [(get_embedding_name(u),u) for u in maps]
         menu_all = [(u,u) for u in maps]
 
         self.select_umap = Dropdown(label='Embedding:', button_type='primary',menu=menu_all, value=maps[self.umap_on_load])
@@ -505,20 +356,10 @@ class astro_web(object):
         self.select_anomalies_from = RadioButtonGroup(labels=list(self.anomaly_detection_algorithms.keys()), active=0 )
         self.show_anomalies = Button(label="Show anomalies (detected by ... )", button_type="warning")
 
-
-        #self.galaxy_groups = get_groups_dict()
-        #self.select_group = RadioButtonGroup(labels=list(self.galaxy_groups.keys()), active=0 )
-        #self.show_group = Button(label="Show catalog", button_type="primary")
-
-
         self.select_galaxy = TextInput(title='Choose Galaxy Index:', value='0')
 
-        #self.get_order = Button(label="Get order", button_type="warning")
-        #self.get_stacks = Button(label="Get stacks", button_type="success")
         self.next_button = Button(label="Next", button_type="default")
         self.prev_button = Button(label="Previous", button_type="default")
-
-        #self.save_selected = Button(label="Save selected", button_type="warning")
 
         self.title_div = Div(text='<center>User manual is available at: <a href="{}" target="_blank">{}</a></center>'.format(
             'https://toast-docs.readthedocs.io/en/latest/',
@@ -532,12 +373,9 @@ class astro_web(object):
             TableColumn(field="info_id", title="Info ID"),
             TableColumn(field="object_id", title="Object ID"),
             TableColumn(field="score", title="Score", formatter=NumberFormatter(format = '100.00')),
-            #TableColumn(field="score", title="Score"),
-            #TableColumn(field="order", title="Order", formatter=NumberFormatter(format = '100.00')),
         ]
 
         self.search_galaxy = TextInput(title='Search Galaxy SpecObjID:')
-
 
 
     def umap_figure_axes(self):
@@ -583,6 +421,7 @@ class astro_web(object):
 
         return
 
+
     def generate_figures(self):
 
         umap_plot_width = 800
@@ -601,9 +440,6 @@ class astro_web(object):
                                       plot_height=column_width,
                                       toolbar_location="above", output_backend='webgl',
                                       x_range=(0,96), y_range=(0,96))
-        
-        #self.stacks_figure = figure(tools="box_zoom,save,reset", plot_width=600, plot_height=400,
-        #                               toolbar_location="above", output_backend='webgl')
 
         title_height = 20
         buffer = 10*self.ncol
@@ -634,7 +470,6 @@ class astro_web(object):
         for i in range(len(self.stacks_figures)):
             self.remove_ticks_and_labels(self.stacks_figures[i])
             t = Title()
-            #t.text = '{}'.format('-')
             t.text = ' '
             self.stacks_figures[i].title = t
 
@@ -643,11 +478,6 @@ class astro_web(object):
                                                  width=column_width,
                                                  height=200,
                                                  scroll_to_selection=False)
-
-        #lines = load_emission_absorption_lines()
-        #for l in lines:
-        #    self.spectrum_figure.add_layout(l)
-        #    self.stacks_figure.add_layout(l)
 
 
     def remove_ticks_and_labels(self, figure):
@@ -664,12 +494,9 @@ class astro_web(object):
 
     def generate_sources(self):
 
-        print(self.galaxy_links)
-        #sd = load_score_data(self.select_score.value, self.galaxy_links)
         sd = self.sd_dict[self.select_score.value]
         self.set_colormap(sd)
         print('generate sources')
-        #print(self.umap_data[self.select_umap.value])
         self.umap_source = ColumnDataSource(
             data=dict(xs=self.umap_data[self.select_umap.value][:, 0],
                       ys=self.umap_data[self.select_umap.value][:, 1],
@@ -678,14 +505,11 @@ class astro_web(object):
                       radius=[self.R_DOT] * len(sd)),
                       )
 
-
-
         self.xlim = (np.min(self.umap_source.data['xs']) - self.UMAP_XYLIM_DELTA, np.max(self.umap_source.data['xs']) + self.UMAP_XYLIM_DELTA)
         self.ylim = (np.min(self.umap_source.data['ys']) - self.UMAP_XYLIM_DELTA, np.max(self.umap_source.data['ys']) + self.UMAP_XYLIM_DELTA)
 
         self.xlim_all = {}
         self.ylim_all = {}
-
 
         for umap in list(self.umap_data.keys()):
             temp_umap_source = ColumnDataSource(
@@ -715,7 +539,6 @@ class astro_web(object):
         self.umap_view = CDSView(source=self.umap_source_view)
 
         im = process_image(self.ims_gal[0])
-        #im = self.ims_gal[0]
         xsize, ysize = self.imsize
         self.data_source = ColumnDataSource(
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
@@ -723,7 +546,6 @@ class astro_web(object):
 
         xsize, ysize = self.imsize
         self.stacks_sources = []
-        #imcollage = np.zeros((nrow*self.imsize, ncol*self.imsize))
         count = 0
         ncollage = self.nrow*self.ncol
         im_empty = self.get_im_empty()
@@ -732,19 +554,11 @@ class astro_web(object):
                 data = {'image':[im_empty], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
             )
             self.stacks_sources.append(source)
-            #self.stacks_sources.append(None)
             count += 1
 
         self.stacks_source = ColumnDataSource(
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
         )
-
-        # self.stacks_source = ColumnDataSource(
-        #     # data=dict(xs=[self.wave]*self.nof_stacks,
-        #     #           ys=[np.ones(self.wave.size)+i*0.1 for i in range(self.nof_stacks)],
-        #     #           c=self.stacks_colors[:self.nof_stacks])
-        #     data = {'image':[self.ims_gal]}
-        # )
 
         self.selected_galaxies_source = ColumnDataSource(dict(
             index=[],
@@ -759,8 +573,10 @@ class astro_web(object):
             ys=[self.umap_data[self.select_umap.value][0, 1]],
         ))
 
+
     def get_im_empty(self):
         return np.zeros((self.imsize[0], self.imsize[1], 4)).astype(np.uint8)
+
 
     def generate_plots(self):
         print("gen plots")
@@ -775,9 +591,6 @@ class astro_web(object):
                                                      size='radius',
                                                      view=self.umap_view)
         self.data_image = self.data_figure.image_rgba('image', 'x', 'y', 'dw', 'dh', source=self.data_source)
-        #self.spectrum_line = self.spectrum_figure.line('xs', 'ys', source=self.spectrum_source, color='black', alpha=1, line_width=2,muted_alpha=0.2)
-        #print("spec stacks")
-        #self.spectrum_stacks = self.stacks_figure.image_rgba('image', 'x', 'y', 'dw', 'dh', source=self.stacks_source)
 
         self.spectrum_stacks = []
         for i in range(self.nrow*self.ncol):
@@ -785,10 +598,6 @@ class astro_web(object):
             self.spectrum_stacks.append(spec_stack)
 
         self.stacks_figure = gridplot(self.stacks_figures, ncols=self.ncol)
-        #self.stacks_figure = gridplot([])
-        # self.spectrum_stacks2 = self.stacks_figure.image_rgba('image', 'x', 'y', 'dw', 'dh', source=self.stacks_source)
-        # p = gridplot([s1, s2])
-        #self.spectrum_stacks = self.stacks_figure.multi_line('xs', 'ys', source=self.stacks_source, color='c', alpha=1, line_width=3,muted_alpha=0.2)
 
         self.umap_search_galaxy = self.umap_figure.circle('xs', 'ys', source=self.search_galaxy_source, alpha=0.5,
                                                           color='tomato', size=self.R_DOT*4, line_color="black", line_width=2)
@@ -796,16 +605,10 @@ class astro_web(object):
         LINE_ARGS = dict(color="#3A5785", line_color=None)
 
 
-
-
-
-
-
     def update_umap_figure(self):
         print("update umap figure")
         def callback(attrname, old, new):
 
-            #sd = get_score_data(self.select_score.value, self.galaxy_links)
             sd = self.sd_dict[self.select_score.value]
             self.set_colormap(sd)
 
@@ -819,8 +622,6 @@ class astro_web(object):
 
             self.umap_figure_axes()
             if True:
-                #self.xlim = (np.min(self.umap_source.data['xs']) - self.UMAP_XYLIM_DELTA, np.max(self.umap_source.data['xs']) + self.UMAP_XYLIM_DELTA)
-                #self.ylim = (np.min(self.umap_source.data['ys']) - self.UMAP_XYLIM_DELTA, np.max(self.umap_source.data['ys']) + self.UMAP_XYLIM_DELTA)
 
                 self.xlim = self.xlim_all[self.select_umap.value]
                 self.ylim = self.ylim_all[self.select_umap.value]
@@ -860,12 +661,12 @@ class astro_web(object):
 
         return
 
+
     def select_stack_by_callback(self):
         print("select stack by")
         def callback(attrname, old, new):
             self.stack_by = self.select_stack_by.value
         return callback
-
 
 
     def select_nof_stacks_callback(self):
@@ -874,18 +675,16 @@ class astro_web(object):
             self.nof_stacks = int(self.select_nof_stacks.value)
         return callback
 
+
     def update_color(self):
         print("update color")
         def callback(attrname, old, new):
-
-
 
             self.umap_figure_axes()
             #sd = get_score_data(self.select_score.value, self.galaxy_links)
             sd = self.sd_dict[self.select_score.value]
 
             self.set_colormap(sd)
-
 
             self.umap_source = ColumnDataSource(
                 data=dict(xs=self.umap_data[self.select_umap.value][:, 0],
@@ -895,10 +694,8 @@ class astro_web(object):
                           names=list(np.arange(len(sd))),
                         ))
 
-
             selected_objects = self.selected_objects.data['index']
             background_objects = self.umap_source_view.data['names']
-
 
             if (self.select_score.value == 'Order') and len(selected_objects) > 0:
                 #custom_sd = sd.copy()
@@ -906,28 +703,23 @@ class astro_web(object):
                 selected_inds = np.array([int(s) for s in selected_objects])
                 order = np.array([float(o) for o in self.selected_objects.data['order']])
                 custom_sd[selected_inds] = order
-                print(np.max(custom_sd))
+                #print(np.max(custom_sd))
                 self.set_colormap(custom_sd)
                 self.get_new_view_keep_selected(background_objects, selected_objects, custom_sd = custom_sd)
             else:
                 self.get_new_view_keep_selected(background_objects, selected_objects)
                 self.select_score_table.value = self.select_score.value
 
-
-
         return callback
-
 
 
     def update_spectrum(self):
         print("update spectrum")
-        # def callback():
         #TODO: BE CAREFUL W INDEX VS ID
         index = self.select_galaxy.value
         specobjid = int(self.galaxy_links[int(index)])
 
         im = process_image(self.ims_gal[int(index)])
-        #im = self.ims_gal[int(index)]
         xsize, ysize = self.imsize
         self.data_source = ColumnDataSource(
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}  
@@ -941,6 +733,7 @@ class astro_web(object):
 
         return
 
+
     def register_reset_on_double_tap_event(self, obj):
         obj.js_on_event(DoubleTap, CustomJS(args=dict(p=obj), code="""
             p.reset.emit()
@@ -948,31 +741,9 @@ class astro_web(object):
             """))
 
 
-    if False:
-        def get_order_callback(self):
-
-            print('get_order_callback')
-            selected_objects = self.selected_objects.data['index']
-            score = self.selected_objects.data['score']
-            if len(selected_objects) > 2:
-                order = get_order_from_umap(self.umap_source.data, selected_objects)
-                #print(order.shape)
-                self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-                self.selected_galaxies_source.data = self.selected_objects.data
-                #self.update_table.value = str(np.random.rand())
-            return
-
-    if False:
-        def save_selected_callback(self):
-
-            selected_inds = self.selected_objects.data['index']
-            #print(selected_inds)
-            np.save('/Users/itamar/git/astro/spectra_maps_web/temp/selected_inds', selected_inds)
-            return
-
-
     def reset_stack_index(self):
         self.stack_index = 0
+
 
     def next_stack_index(self):
         print('next')
@@ -990,20 +761,17 @@ class astro_web(object):
             self.stack_index -= self.ncol*self.nrow
             self.stacks_callback()
 
+
     # TODO: can this be simplified?
     def select_stacks_callback(self):
-
         def callback(event):
-
             self.stacks_callback()
-
         return callback
 
 
     def stacks_callback(self):
         
         print('select_stacks_callback')
-
         selected_objects = self.selected_objects.data['index']
         selected_inds = np.array([int(s) for s in selected_objects])
         nof_selected = selected_inds.size
@@ -1033,104 +801,41 @@ class astro_web(object):
 
             count += 1
 
-        #for i in range(len(self.stacks_sources)):
-        #    self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
-
 
     def get_stacks_callback(self):
 
         print('get_stacks_callback')
-
         selected_objects = self.selected_objects.data['index']
-
         selected_inds = np.array([int(s) for s in selected_objects])
 
-        #selected_spectra_mat = self.specs_gal[selected_inds]
         nof_selected = selected_inds.size
-
-        # if self.stack_by == 'x':
-        #     xs=np.array(self.umap_data[self.select_umap.value][:, 0])
-        #     order = np.array([float(o) for o in xs[selected_inds]])
-        #     self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-        #     self.selected_galaxies_source.data = self.selected_objects.data
-
-        # elif self.stack_by == 'y':
-        #     ys=np.array(self.umap_data[self.select_umap.value][:, 1])
-        #     order = np.array([float(o) for o in ys[selected_inds]])
-        #     self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-        #     self.selected_galaxies_source.data = self.selected_objects.data
-        # elif self.stack_by == 'auto':
-        #     xs=np.array(self.umap_data[self.select_umap.value][:, 0])
-        #     order = np.array([float(o) for o in xs[selected_inds]])
-        #     self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-        #     self.selected_galaxies_source.data = self.selected_objects.data
-
-
-            #print('get_order_callback')
-            #selected_objects = self.selected_objects.data['index']
-            #score = self.selected_objects.data['score']
-            #if len(selected_objects) > 2:
-            #    order = get_order_from_umap(self.umap_source.data, selected_objects)
-            #    self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-            #    self.selected_galaxies_source.data = self.selected_objects.data
-                #self.update_table.value = str(np.random.rand())
-            #else:
-            #    order = numpy.zeros(len(selected_objects))
-            #order = np.array([float(o) for o in self.selected_objects.data['order']])
-
-        #delta = 0
-        #stacks_ = ladder_plot_smooth(selected_spectra_mat, np.arange(nof_selected), order, self.nof_stacks, delta)
-        #stacks = [np.log(s  + sys.float_info.epsilon) if self.use_log() else s for s in stacks_]
-
-        # self.stacks_source = ColumnDataSource(
-        #                     data=dict(xs=[self.wave]*self.nof_stacks,
-        #                               ys=stacks,
-        #                               c=self.stacks_colors[:self.nof_stacks]))
-        
-        ## TODO: try again without adding nonetypes and see if still get error
-        ## to check if error related to this or the callback
-        # thanks past kate!!
 
         print("Update stacks")
         xsize, ysize = self.imsize
         self.stacks_sources = []
         nrow, ncol = 2, 3
-        #imcollage = np.zeros((nrow*self.imsize, ncol*self.imsize))
         count = 0
-        #nims = np.min((nrow*ncol, len(selected_inds)))
         while count < nrow*ncol:
             if count >= nof_selected:
                 self.stacks_sources.append(None)
                 count += 1
                 continue 
             ind = selected_inds[count]
-            print(ind)
             im = process_image(self.ims_gal[ind])
-            #im = self.ims_gal[ind]
             source = ColumnDataSource(
                 data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
             )
             self.stacks_sources.append(source)
             count += 1
-        print(self.stacks_sources)
 
         xsize, ysize = self.imsize
         im = process_image(self.ims_gal[0])
-        #im = self.ims_gal[0]
         self.stacks_source = ColumnDataSource(
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
         )
 
         for i in range(nof_selected):
             self.spectrum_stacks[i].data_source.data = self.stacks_sources[i].data
-
-        #score = self.selected_objects.data['score']
-        #if len(selected_objects) > 2:
-        #    order = get_order_from_umap(self.umap_source.data, selected_objects)
-        #    print(order.shape)
-        #    self.selected_objects.data['order'] = list(order)#= dict(index=selected_objects, score=score, order=)
-        #    self.selected_galaxies_source.data = self.selected_objects.data
-        #    #self.update_table.value = str(np.random.rand())
 
         return
 
@@ -1147,18 +852,6 @@ class astro_web(object):
 
         return
 
-    if False:
-        def show_group_callback(self):
-
-            print('show_group_callback')
-            selected_group = list(self.galaxy_groups.keys())[self.select_group.active]
-            selected_objects = self.galaxy_groups[selected_group]
-            selected_objects = [int(s) for s in selected_objects]
-
-            backgroud_objects = self.umap_source_view.data['names']
-            self.get_new_view_keep_selected(backgroud_objects, selected_objects)
-
-            return
 
     def select_galaxy_callback(self):
         print('select gal')
@@ -1173,32 +866,30 @@ class astro_web(object):
                 backgroud_objects = self.umap_source_view.data['names']
                 self.get_new_view_keep_selected(backgroud_objects, selected_objects)
 
-
                 return
             print('galaxy callback')
             specobjid = str(self.search_galaxy.value)
             new_specobjid = str(int(self.galaxy_links[int(index)]))
-            logger.debug(type(specobjid), specobjid, type(new_specobjid), new_specobjid)
-            print(specobjid, new_specobjid)
+            #logger.debug(type(specobjid), specobjid, type(new_specobjid), new_specobjid)
+            #print(specobjid, new_specobjid)
             if specobjid != new_specobjid:
                 print('not equal')
                 self.search_galaxy.value = new_specobjid
-                
             else:
                 print('Update spec from select')
                 self.update_spectrum()
 
         return callback
 
+
     def search_galaxy_callback(self):
         print('search gal')
         def callback(attr, old, new):
-            logger.debug(self.search_galaxy.value)
+            #logger.debug(self.search_galaxy.value)
             specobjid_str = str(self.search_galaxy.value)
             if ',' in specobjid_str:
                 print('list input')
                 selected_objects_ids = specobjid_str.replace(' ','').split(',')
-                print(selected_objects_ids)
                 index_str = str(self.reverse_galaxy_links[selected_objects_ids[0]])
                 for idx, specobjid in enumerate(selected_objects_ids[1:]):
                     index_str = '{}, {}'.format(index_str, str(self.reverse_galaxy_links[specobjid]))
@@ -1211,7 +902,7 @@ class astro_web(object):
                 new_index = str(self.reverse_galaxy_links[specobjid_str])
                 self.update_search_circle(new_index)
                 print('search galaxy - updated circle')
-                logger.debug(type(index), index, type(new_index), new_index)
+                #logger.debug(type(index), index, type(new_index), new_index)
                 if index != new_index:
                     self.select_galaxy.value = new_index
                 else:
@@ -1219,7 +910,6 @@ class astro_web(object):
                     self.update_spectrum()
 
         return callback
-
 
 
     def update_search_circle(self, index):
@@ -1231,16 +921,11 @@ class astro_web(object):
         return
 
 
-
-
-
     def get_new_view_keep_selected(self, background_objects, selected_objects_, custom_sd = None):
 
         print('get_new_view_keep_selected')
-
         _, _, is_relevant = get_relevant_objects_coords(self.umap_source.data)
         selected_objects = [s for s in selected_objects_ if is_relevant[int(s)]]
-        #print(selected_objects)
         selected_objects = np.array(selected_objects)
         background_objects = np.array(background_objects)
 
@@ -1258,7 +943,6 @@ class astro_web(object):
 
         new_objects = new_objects.astype(int)
         if custom_sd is None:
-            #sd = get_score_data(self.select_score.value, self.galaxy_links)
             sd = self.sd_dict[self.select_score.value]
         else:
             sd = custom_sd
@@ -1272,9 +956,6 @@ class astro_web(object):
                         ))
         self.points = np.array(new_objects)
         self.umap_scatter.data_source.data = self.umap_source_view.data
-
-
-
 
         if nof_selected_objects > 0:
             order = np.array([float(o) for o in self.selected_objects.data['order']])
@@ -1290,13 +971,8 @@ class astro_web(object):
             self.selected_objects = ColumnDataSource(data=dict(index=[], score=[], order=[], info_id=[], object_id=[]))
             self.update_table.value = str(np.random.rand())
             self.internal_reset.value = str(np.random.rand())
-            #order = np.array([float(0) for i in background_objects])
-            #self.selected_objects.data = dict(index=list(background_objects), score=[-999999 if np.isnan(sd[s]) else sd[s] for s in background_objects], order=list(order))
-            #
         else:
             self.update_table.value = str(np.random.rand())
-
-
 
         # Update circle
         index = self.select_galaxy.value
@@ -1317,7 +993,6 @@ class astro_web(object):
         self.update_search_circle(index)
 
         return
-
 
 
     def update_umap_filter_event(self):
@@ -1349,8 +1024,6 @@ class astro_web(object):
                 print("umap selected:")
                 selected_objects = self.selected_objects.data['index']
                 self.get_new_view_keep_selected(background_objects, selected_objects)
-
-
             else:
                 print('Pan event did not require doing anything')
                 pass
@@ -1361,7 +1034,6 @@ class astro_web(object):
         def callback(event):
             print('reset double tap')
 
-
             background_objects = get_decimated_region_points(
                 self.xlim[0],
                 self.xlim[1],
@@ -1370,27 +1042,16 @@ class astro_web(object):
                 self.umap_source.data,
                 self.DECIMATE_NUMBER)
 
-
             selected_objects = self.selected_objects.data['index']
             self.get_new_view_keep_selected(background_objects, selected_objects)
 
-            # No zoom outs ....
-            #print(self.xlim, self.ylim)
-            #print(self.umap_figure.x_range.start, self.umap_figure.y_range.start)
-            #if self.umap_figure.x_range.start < self.xlim[0]:
             self.umap_figure.x_range.start = self.xlim[0]
 
-            #if self.umap_figure.x_range.end > self.xlim[1]:
             self.umap_figure.x_range.end = self.xlim[1]
 
-            #if self.umap_figure.y_range.start < self.ylim[0]:
             self.umap_figure.y_range.start = self.ylim[0]
 
-            #if self.umap_figure.y_range.end > self.ylim[1]:
             self.umap_figure.y_range.end = self.ylim[1]
-
-            #for i in range(len(self.stacks_figures)):
-            #    self.stacks_figures[i] = None
 
             xsize, ysize = self.imsize
             self.stacks_sources = []
@@ -1437,13 +1098,11 @@ class astro_web(object):
                 self.color_mapper.palette = p
                 self.umap_scatter.nonselection_glyph.fill_color = 'lightgray'
 
-
         return callback
 
 
     def register_callbacks(self):
         self.register_reset_on_double_tap_event(self.umap_figure)
-        #self.register_reset_on_double_tap_event(self.spectrum_figure)
         self.register_reset_on_double_tap_event(self.data_figure)
         for i in range(len(self.stacks_figures)):
             self.register_reset_on_double_tap_event(self.stacks_figures[i])
@@ -1451,17 +1110,7 @@ class astro_web(object):
 
         self.show_anomalies.on_click(self.show_anomalies_callback)
         self.next_button.on_click(self.next_stack_index)
-        #self.next_button.on_click(self.select_stacks_callback())
         self.prev_button.on_click(self.prev_stack_index)        
-        #self.prev_button.on_click(self.select_stacks_callback())
-
-
-        #self.show_group.on_click(self.show_group_callback)
-        #self.get_order.on_click(self.get_order_callback)
-        #self.get_stacks.on_click(self.get_stacks_callback)
-        #self.save_selected.on_click(self.save_selected_callback)
-        #self.select_galaxy.on_click(self.select_galaxy_callback())
-
 
         self.select_score.on_change('value', self.update_color())
         self.select_umap.on_change('value', self.update_umap_figure())
@@ -1474,7 +1123,6 @@ class astro_web(object):
 
         self.select_colormap.on_change('value', self.select_colormap_callback())
 
-        #self.select_umap.on_change('value', self.select_stacks_callback())
         self.umap_figure.on_event(PanEnd, self.reset_stack_index)
         self.umap_figure.on_event(PanEnd, self.select_stacks_callback())
 
@@ -1490,7 +1138,6 @@ class astro_web(object):
                                                                     console.log(s1);
                                                                     console.log('selected_galaxies_source_js')
                                                                     """))
-
 
         self.umap_source_view.selected.js_on_change('indices', CustomJS(
             args=dict(s1=self.umap_source_view, s2=self.selected_galaxies_source, s3=self.selected_objects, s4=self.galaxy_links, s5=self.object_ids), code="""
@@ -1585,52 +1232,20 @@ class astro_web(object):
                         p.reset.emit()
                         """))
 
-
         self.umap_figure.on_event(PanEnd, self.update_umap_filter_event())
         self.umap_figure.on_event(Reset, self.update_umap_filter_reset())
 
-
-
-#x = load_data(data_path)
-#idxs_ = x[1]
 
 def get_astro_session(doc):
     sess = astro_web(data_type, data_path)
     return sess(doc)
 
 
+# This is necessary for displaying image properly
 def process_image(im):
-    #im = luptonize(im)
     alpha = np.full((im.shape[0], im.shape[1], 1), 255)
     im = np.concatenate((im, alpha), axis=2)
     return im.astype(np.uint8)
-
-
-def luptonize(x):
-    rgb_q = 15
-    rgb_stretch = 0.5
-    rgb_min = 0
-    if x.ndim==3:
-        x = make_lupton_rgb(x[:,:,2], x[:,:,1], x[:,:,0],
-                      Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
-    elif x.ndim==4:
-        x = np.array([make_lupton_rgb(xi[:,:,2], xi[:,:,1], xi[:,:,0],
-                      Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)
-                      for xi in x])
-    else:
-        raise ValueError(f"Wrong number of dimensions! Gave {x.ndim}, need 3 or 4")
-    return x
-
-def umap_embedding(values):
-    values = np.array(values)
-    Nv = values.shape[0]
-    print(f"Embedding {Nv} values of shape {values[0].shape}")
-    values = values.reshape((Nv, -1))
-    reducer = umap.UMAP(n_neighbors=5, min_dist=0.05)
-    embedding = reducer.fit_transform(values)
-    # for N values, embedding has shape (N, 2) where the 2 is x and y coords
-    print("Done embedding!")
-    return embedding
 
 
 # a = astro_web(data_type, data_path)
@@ -1640,6 +1255,7 @@ if __name__ == '__main__':
 
     server = Server({'/galaxies': get_astro_session}, num_procs=0,
                     allow_websocket_origin=['localhost:{}'.format(lh)], show=False)
-    server.start()
-    # server.io_loop.add_callback(server.show, "/")
+    server.start() # this line doesn't seem to do anything, but also doesn't hurt...
+    # KSF: found this code here, but not sure what it's doing https://riptutorial.com/bokeh/example/29716/local-bokeh-server-with-console-entry-point
+    # server.io_loop.add_callback(server.show, "/") # this was commented out
     server.io_loop.start()

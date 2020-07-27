@@ -21,3 +21,6 @@ notebooks/
 **/.DS_store
 .ipynb_checkpoints/
 .vscode
+tables/
+*.DS_store
+*.png
