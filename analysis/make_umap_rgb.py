@@ -16,12 +16,15 @@ import utils
 
 def main():
    
-    #tag = 'gri_100k'
-    tag = 'gri_cosmos_fix'
+    #tag = 'gri_3sig'
+    tag = 'gri_100k'
+    #tag = 'gri_cosmos'
     plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2020-07-08'
 
-    aenum = 9500
-    aetag = '_latent16'
+    aenum = 29500
+    #aenum = 4500
+    aetag = '_latent16_real'
+    #aetag = '_latent32'
     savetag = f'_model{aenum}{aetag}'
     
     results_dir = f'/scratch/ksf293/kavli/anomaly/results'
@@ -31,27 +34,30 @@ def main():
 
     imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
 
-    savetag = ''
-  
     #mode = 'images'
     #mode = 'residuals'
     mode = 'auto'
     savetag += f'_{mode}'
 
-    #n_anoms = False
-    #savetag += '_residdisc'
+    # dataset choices
     n_anoms = 0
     sigma = 0
+    # umap params
+    n_neighbors = 5
+    min_dist = 0.05
+
     if sigma>0:
         savetag += f'_{sigma}sigma'
-
     if n_anoms:
         savetag += '_anoms'
-    save_fn = f'/scratch/ksf293/kavli/anomaly/results/embedding_{tag}{savetag}.npy'
+    if n_neighbors and min_dist:
+        savetag += f'_nn{n_neighbors}md{min_dist}'
+
+    save_fn = f'/scratch/ksf293/kavli/anomaly/results/embeddings/embedding_{tag}{savetag}.npy'
     plot_fn = f'{plot_dir}/umap_{tag}{savetag}.png'
     
     if mode=='auto':
-        values, idxs, scores = get_autoencoded(auto_fn) 
+        values, idxs, scores = utils.get_autoencoded(auto_fn, n_anoms=n_anoms, sigma=sigma)
     elif mode=='images' or mode=='residuals':
         reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
     
@@ -60,28 +66,19 @@ def main():
     if mode=='residuals':
         residuals, _, _ = utils.get_residuals(reals, recons)
         values = residuals
-    
-    embed(values, idxs, scores, plot_fn, save_fn)
-
-def get_autoencoded(auto_fn):
-    auto = np.load(auto_fn, allow_pickle=True)
-    print(auto.shape)
-    latents = auto[:,0]
-    print(latents.shape)
-    idxs = auto[:,1]
-    scores = auto[:,2]
-    latents = latents.tolist() 
-    return latents, idxs, scores
+   
+    print(f"UMAP-ping {len(values)} values") 
+    embed(values, idxs, scores, plot_fn, save_fn, n_neighbors=n_neighbors, min_dist=min_dist)
 
     
-def embed(values, idxs, colorby, plot_fn, save_fn):
+def embed(values, idxs, colorby, plot_fn, save_fn, n_neighbors=5, min_dist=0.05):
     print("Reshaping") 
     values = np.array(values)
     values = values.reshape((values.shape[0], -1))
     print(values.shape)
     print("Embedding")
     #values = np.array(values).flatten() 
-    reducer = umap.UMAP(n_neighbors=5, min_dist=0.05)
+    reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist)
     embedding = reducer.fit_transform(values)
     print("Plotting")
     plt.scatter(embedding[:, 0], embedding[:, 1], marker='.', c=colorby, cmap='viridis', s=8,
