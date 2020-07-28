@@ -17,51 +17,58 @@ import utils
 def main():
    
     #tag = 'gri_3sig'
-    tag = 'gri_100k'
-    #tag = 'gri_cosmos'
-    plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2020-07-08'
+    #tag = 'gri_100k'
+    tag = 'gri_cosmos'
+    #base_dir = '/scratch/ksf293/kavli/anomaly'
+    base_dir = '..'
+    #plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2020-07-08'
+    plot_dir = f'../plots/plots_2020-07-08'
+    savetag = ''
 
-    aenum = 29500
-    #aenum = 4500
+    #aenum = 29500
+    aenum = 9500
+    #aetag = '_latent16'
     aetag = '_latent16_real'
     #aetag = '_latent32'
-    savetag = f'_model{aenum}{aetag}'
+    autotag = f'_model{aenum}{aetag}'
+
     
-    results_dir = f'/scratch/ksf293/kavli/anomaly/results'
+    results_dir = f'{base_dir}/results'
     results_fn = f'{results_dir}/results_{tag}.h5'
 
-    auto_fn = f'{results_dir}/autoencodes/autoencoded_{tag}{savetag}.npy'
+    auto_fn = f'{results_dir}/autoencodes/autoencoded_{tag}{autotag}.npy'
 
-    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+    imarr_fn = f'{base_dir}/data/images_h5/images_{tag}.h5'
 
-    #mode = 'images'
+    #mode = 'reals'
     #mode = 'residuals'
     mode = 'auto'
-    savetag += f'_{mode}'
-
+    
     # dataset choices
     n_anoms = 0
     sigma = 0
     # umap params
     n_neighbors = 5
-    min_dist = 0.05
+    min_dist = 0.1
 
     if sigma>0:
         savetag += f'_{sigma}sigma'
     if n_anoms:
         savetag += '_anoms'
+    if mode=='auto':
+        savetag += autotag
     if n_neighbors and min_dist:
         savetag += f'_nn{n_neighbors}md{min_dist}'
-
-    save_fn = f'/scratch/ksf293/kavli/anomaly/results/embeddings/embedding_{tag}{savetag}.npy'
-    plot_fn = f'{plot_dir}/umap_{tag}{savetag}.png'
+    
+    save_fn = f'{base_dir}/results/embeddings/embedding_umap_{mode}_{tag}{savetag}.npy'
+    plot_fn = f'{plot_dir}/umap_{mode}_{tag}{savetag}.png'
     
     if mode=='auto':
         values, idxs, scores = utils.get_autoencoded(auto_fn, n_anoms=n_anoms, sigma=sigma)
-    elif mode=='images' or mode=='residuals':
+    elif mode=='reals' or mode=='residuals':
         reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
     
-    if mode=='images':
+    if mode=='reals':
         values = reals    
     if mode=='residuals':
         residuals, _, _ = utils.get_residuals(reals, recons)
