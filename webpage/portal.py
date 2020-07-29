@@ -36,8 +36,8 @@ path_dict = dict(
     galaxies='results/'
 )
 
-#tag = 'gri_3sig'
-tag = 'gri_cosmos'
+tag = 'gri_3sig'
+#tag = 'gri_cosmos'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
 results_path = 'results/'
@@ -171,9 +171,20 @@ def get_numbers(u):
 def get_embedding_name(u):
 
     if 'umap' in u:
+        if 'auto' in u:
+            if 'real' in u:
+                name = 'UMAP on Autoencoded Real Images'
+            else:
+                name = 'UMAP on Autoencoded Residuals'
+        elif 'reals' in u:
+            name = 'UMAP on Real Image Pixels'
+        elif 'residuals' in u:
+            name = 'UMAP on Residual Image Pixels'
         #name = 'UMAP {}-{} A'.format(get_numbers(u)[-2], get_numbers(u)[-1])
         #name = u[:-4]#.replace('_', ' ', 1)
-        name = '_'.join((u.split('_')[:2]))
+        #name = '_'.join((u.split('_')[:2]))
+    elif 'blendextend' in u:
+        name = 'Blendedness vs. log(Extendedness)'
     else:
         name = u
     return name
@@ -361,9 +372,7 @@ class astro_web(object):
         self.next_button = Button(label="Next", button_type="default")
         self.prev_button = Button(label="Previous", button_type="default")
 
-        self.title_div = Div(text='<center>User manual is available at: <a href="{}" target="_blank">{}</a></center>'.format(
-            'https://toast-docs.readthedocs.io/en/latest/',
-            'toast-docs.readthedocs.io'), style={'font-size': '200%', 'color': 'teal'})
+        self.title_div = Div(text='<center>Author: Kate Storey-Fisher \n Adapted from: Itamar Reis</center>', style={'font-size': '200%', 'color': 'teal'})
         self.link_div = Div(text='<center>View galaxy in <a href="{}" target="_blank">{}</a></center>'.format(
             self.galaxy_link(int(self.select_galaxy.value)), 'SDSS object explorer'),
             style={'font-size': '120%', 'color': 'teal'})
@@ -1253,8 +1262,9 @@ if __name__ == '__main__':
     lh = 5006
     print('Opening Bokeh application on http://localhost:{}/'.format(lh))
 
+    websockets = ['localhost:{}'.format(lh)]
     server = Server({'/galaxies': get_astro_session}, num_procs=0,
-                    allow_websocket_origin=['localhost:{}'.format(lh)], show=False)
+                    allow_websocket_origin=websockets, show=False)
     server.start() # this line doesn't seem to do anything, but also doesn't hurt...
     # KSF: found this code here, but not sure what it's doing https://riptutorial.com/bokeh/example/29716/local-bokeh-server-with-console-entry-point
     # server.io_loop.add_callback(server.show, "/") # this was commented out
