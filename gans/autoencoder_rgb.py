@@ -43,11 +43,11 @@ ITERS = 30000#10000 # How many generator iterations to train for
 SAMPLE_ITERS = 500 #100 # Multiples at which to generate image sample
 SAVE_ITERS = 500 #1000 # Multiples at which to save the autoencoder state
 overwrite = True
-LATENT_DIM = 16
+LATENT_DIM = 32
 
-#tag = 'gri_3sig'
-#tag = 'gri_cosmos_fix'
-tag = 'gri_100k'
+tag = 'gri_3sig'
+#tag = 'gri_cosmos'
+#tag = 'gri_100k'
 results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
 #results_dir = '/archive/k/ksf293/kavli/anomaly/results'
 results_fn = f'{results_dir}/results_{tag}.h5'
@@ -153,6 +153,10 @@ data = reals
 data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=False, normalize=False, smooth=False)
 fixed_im, _ = data_gen.sample(128)
 
+n=10
+print("fixed")
+print(fixed_im[0][:n])
+print(fixed_im.reshape((-1,IMAGE_DIM))[0][:n])
 fixed_im_samples = AutoEncoder(fixed_im.reshape((-1,IMAGE_DIM))) #fixed latent space rep to test reencoding
 print("Fixed im samples") # dim (128, 27648)
 print(fixed_im_samples.shape)
@@ -164,7 +168,10 @@ lib.save_images.save_images(
     )
 def generate_image(frame):
     samples = sess.run(fixed_im_samples)
+    #print("samples")
+    #print(samples[0][:n])
     samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1)
+    #print(samples[0][:n])
     lib.save_images.save_images(
         samples,
         out_dir+'samples_{}.png'.format(frame),
