@@ -1,0 +1,371 @@
+\documentclass{article}
+
+% if you need to pass options to natbib, use, e.g.:
+      \PassOptionsToPackage{sort, compress}{natbib}
+% before loading neurips_2020
+
+% ready for submission
+\usepackage{neurips_2020}
+
+% to compile a preprint version, e.g., for submission to arXiv, add add the
+% [preprint] option:
+%     \usepackage[preprint]{neurips_2020}
+
+% to compile a camera-ready version, add the [final] option, e.g.:
+%     \usepackage[final]{neurips_2020}
+
+% to avoid loading the natbib package, add option nonatbib:
+%      \usepackage[nonatbib]{neurips_2020}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{amsmath}
+ 
+% user packages
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{graphicx}
+\usepackage{xcolor,listings}
+\graphicspath{ {./images/} }
+
+% USER-DEFINED COMMANDS
+\DeclareMathOperator*{\maxi}{max}
+\DeclareMathOperator*{\mini}{min}
+\newcommand{\sig}{$\sigma$} %adds extra space when followed by punctuation! need to fix 
+\newcommand{\KSF}[1]{\textcolor{teal}{{[KSF says: #1]}}}
+
+\title{Anomaly Detection in Astronomical Images with Generative Adversarial Networks}
+
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to LaTeX to determine where to break the
+% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
+% authors names on the first line, and the last on the second line, try using
+% \AND instead of \And before the third author name.
+
+\author{%
+  {Kate Storey-Fisher} \\
+  Center for Cosmology and Particle Physics, Department of Physics \\
+  New York University, NY 10003 \\
+  \texttt{k.sf@nyu.edu} \\
+  % TODO: add coauthors
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \AND
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    We present an anomaly detection method using generative adversarial networks (GANs) on optical galaxy images in the Hyper Suprime-Cam (HSC) survey.
+    The GAN is trained on the entire sample, and learns to generate realistic HSC-like images that follow the distribution of the training data.
+    We identify images which are less well-represented in the generator's latent space, and which the discriminator flags as less realistic; these are thus anomalous with respect to the rest of the data.
+    We further characterize these anomalies using an autoencoder and dimensionality reduction on the residual differences between the real and GAN-reconstructed images.
+    We identify anomalous images that include galaxy mergers, tidal features, extreme color galaxies, and extreme star-forming galaxies, as well as processing errors.
+    \KSF{says 4 pages but last years seem like 5 - does title page count??}
+\end{abstract}
+
+\section{Introduction}
+
+
+Many discoveries in astronomy have been made by identifying unexpected outliers in collected data (e.g. \citealt{Cardamone2009}, \citealt{Massey2019}). 
+As data sets increase in size, automated methods for detecting these outliers are becoming necessary; for example, the upcoming Large Synoptic Survey Telescope (LSST) will observe 40 billion objects \citep{Ivezic2018}.
+These present opportunities for discovery in their massive data sets, as well as the need for new, automated methods to filter the data and identify anomalies.
+
+Machine learning methods are being rapidly developed as approaches to anomaly detection in astronomy and other fields.
+A review of anomaly detection methods and applications using deep learning is presented in \cite{Chalapathy2019}.
+Unsupervised learning lends itself to this problem, as it allows for outlier identification without expert labelling of training data or introducing biases based on expected outliers.
+\cite{Baron2017} use random forests to find outliers in Sloan Digital Sky Survey (SDSS) spectroscopic data.
+\cite{Solarz2017} apply support vector machines to find anomalies in the Wide-field Infrared Survey Explorer (WISE) survey.
+Beyond galaxy surveys, deep learning has been applied to anomaly detection problems in supernovae data \citep{Pruzhinskaya2019}. 
+
+Generative Adversarial Networks (GANs) have a natural application to identifying outliers, as they are able to model complex distributions of high-dimensional data.
+The generator will be able to better model images that are more common in the training set, and will perform worse on images that are more anomalous relative to the rest of the data.
+Similarly, the discriminator learns to identify real data, and thus contains information about whether an object is realistic or anomalous. GANs were first applied to anomaly detection by \cite{Schlegl2017}, in the context of medical imaging.
+They demonstrate that a GAN trained on normal images can then be used to identify abnormal images.
+GANs have also been used to detect outliers in time-series data \citep{Li2018}.
+\cite{DiMattia2019} present a survey of the application of GANs to anomaly detection and perform empirical validation of the models.
+
+In this work, we train a WGAN-GP (Wasserstein GAN with Gradient Penalty) to identify anomalous objects in a subsample of HSC images.
+We then characterize the anomalous images, to distinguish bad detections from interesting objects, and further classify these objects of interest.
+To our knowledge, this is the first application of GANs to anomaly detection in astronomical data.
+
+
+\section{Data}
+\label{data}
+
+We use data from the Hyper Suprime-Cam Subaru Strategic Program.
+The wide-field optical survey is imaged with the Subaru Telescope and has been ongoing since March 2014.
+The second public data release (PDR2, \citealt{Aihara2014}) contains over 430 million primary objects in the wide field covering 1114 deg$^2$. The area observed in full-depth full-color covers 305 deg$^2$.
+
+We choose a magnitude slice for our analysis, with $20.0<i<20.5$. 
+This allows for a more consistent sample in object size. 
+We exclude objects flagged as having significant issues by the pipeline. 
+We generate cutouts of $96 x 96$ pixels around each image, about $15 x 15$ arcseconds.
+This captures the entirety of most objects while still being a reasonable size for training the network, without the need for downsampling.
+We use the $gri$-bands to get 3-color images.
+This results in a sample of 942,782 objects, consisting of $\sim$70\% extended objects and $\sim$30\% compact objects.
+
+We perform some preprocessing on the images before feeding them to the neural network.
+We normalize the pixel values to avoid issues due to the raw data range spanning multiple orders of magnitude.
+We convert the flux values to RGB values using the method of Lupton \citep{Lupton2003}, and then convert these to between 0 and 1.
+
+
+\section{Model \& Training}
+\label{headings}
+
+\subsection{GAN Architecture and Training}
+
+We construct a generative adversarial network based on the implementation by \cite{Gulrajani2017}.
+The basic setup is a generator and a discriminator with separate loss functions, which compete against each other in a minimax game.
+The discriminator learns to distinguish real images from those generated by the generator.
+The generator, in turn, learns how realistic its generated images are based on feedback from the discriminator.
+The loss function to optimize is then
+\begin{equation}
+\mini_G \, \maxi_D \, L(D,G) = \mathbb{E}_{x\sim p_{\mathrm{real}}(x)}[\mathrm{log} D(x)] \: + \mathbb{E}_{z\sim p_{\mathrm{latent}}(z)}[\mathrm{log}(1 - D(G(z)))] 
+\end{equation}
+
+GANs are notorious for instability in training; balancing the generator and discriminator losses is nontrivial.
+One improvement to this loss function to use the Wasserstein distance to compute the distance between probability distributions \citep{Arjovsky2017}.
+This is a more meaningful distance measure and is smooth even when the distributions are disjoint. 
+Another issue is caused by the gradient vanishing when the discriminator is perfect, so the loss function cannot continue to be updated.
+One approach to solve this is by applying a ''gradient penalty'' (GP) to penalize the loss.
+These two improvements are known as a WGAN-GP, and we use this construction in our GAN.
+The implementation is in \texttt{tensorflow} and \texttt{python}.
+
+We construct our generator to have a depth of 4 with a latent space of dimension 128, and a sigmoid activation function.
+The discriminator also has a depth of 4.
+We train the GAN in batches of 32 images, with 5 discriminator updates per generator update.
+After around 10,000 training iterations, the generator and discriminator losses stabilize and no longer improve.
+We thus select the generator and discriminator models at 10,000 training iterations. 
+
+
+\subsection{Anomaly Scores}
+
+\begin{figure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  % include first image
+  \includegraphics[width=1\linewidth]{recons_n3n2sig}  
+  \caption{}
+  \label{fig:recon_neg}
+\end{subfigure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  % include second image
+  \includegraphics[width=1\linewidth]{recons_01sig}  
+  \caption{}
+  \label{fig:recon_mid}
+\end{subfigure}
+
+\begin{subfigure}{.5\textwidth}
+  \centering
+  % include third image
+  \includegraphics[width=1\linewidth]{recons_35sig.png}  
+  \caption{}
+  \label{fig:recon_3sig}
+\end{subfigure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  % include fourth image
+  \includegraphics[width=1\linewidth]{recons_59sig.png}  
+  \caption{}
+  \label{fig:recon_5sig}
+\end{subfigure}
+\caption{The results of GAN image reconstruction. The top row of each panel shows the original image, the second row shows the best GAN reconstruction, and the bottom row shows the residual between the two. The assigned anomaly score is shown at the top of each column. The images in each panel are random samples of images in the following ranges of anomaly score: (a) 3\sig to 2\sig below the mean, (b) the mean to 1\sig, (c) 3\sig to 5\sig, (d) above 5\sig. It is clear that higher anomaly scores are indicative of poorer GAN reconstructions and hence larger residuals.}
+\label{fig:recon}
+\end{figure}
+
+We apply the generator to generate its best reconstruction of each image in the sample.
+To do this, we assign each attempted reconstruction a generator score and a discriminator score.
+The generator score $s_\mathrm{gen}$ is the mean square error of the difference between the pixels of the two images, summed over all bands.
+The discriminator also provides a way of measuring how anomalous an image is, as more anomalous images will more likely be marked as ''fake'' by the discriminator.
+To capture this, we output the image representation after the penultimate layer of the discriminator. %look up dimensionality
+The mean square error between this representation for the real and generated image is the discriminator score, $s_\mathrm{disc}$.
+The total anomaly score $s_\mathrm{anom}$ is a weighted average of these,
+\begin{equation}
+s_\mathrm{anom} = (1-\lambda) \cdot s_\mathrm{gen} + \lambda \cdot s_\mathrm{disc} 
+\end{equation}
+where $\lambda$ is a weighting hyperparameter which we tune.
+\KSF{better symbol/name for anomaly score?}
+
+The generator attempts to generate a reconstruction with the minimal anomaly score.
+To speed up this process, we first train an encoder for the whole training sample.
+This convolutional network makes a first approximation of the 128-dimensional latent-space vector of the generator.
+We then perform a basic optimization for each image individually to reach a lower anomaly score, optimizing for 10 iterations.
+We note that the score converges before 10 for most images. %CHECK
+The score after this process for each image is assigned as its final anomaly score.
+Higher anomaly scores indicate more anomalous objects, while lower scores indicate objects that are more well-modeled by the GAN; note that the scores are entirely relative and are meaningful only with respect to the rest of the sample.
+
+The result of this process is shown in Figure \ref{fig:recon}.
+We can see that the GAN is able to generate realistic images; for compact objects, it constructs nearly identical images, and assigns the objects low anomaly scores (Figure \ref{fig:recon_neg}).
+The GAN does a decent job at reconstructing more extended objects and those with companions; these are assigned anomaly scores near the mean (Figure \ref{fig:recon_mid})
+The model is more challenged to generate objects with rare features or colors, as in the 3-5\sig anomalies in Figure \ref{fig:recon_3sig}.
+Finally, objects with processing errors, such as complete saturation in one of the color bands, have extremely high anomaly scores (Figure \ref{fig:recon_5sig}).
+
+We identify 9,648 objects with scores greater than 3\sig above the mean, just over 1\% of the sample; we take these as our ''anomalies'' and perform further classification on this sample.
+
+\section{Characterization of Anomalies}
+\label{charac}
+
+\begin{figure} \label{fig:umap}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_3sig_reals}  
+  \caption{Embedding with original image pixels.}
+  \label{fig:reals}
+\end{subfigure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_3sig_resids}  
+  \caption{Embedding with residual image pixels.}
+  \label{fig:resids}
+\end{subfigure}
+
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_3sig_reals_auto}  
+  \caption{Embedding with autoencoded original images.}
+  \label{fig:reals_auto}
+\end{subfigure}
+\begin{subfigure}{.5\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_3sig_resids_auto}  
+  \caption{Embedding with autoencoded residual images.}
+  \label{fig:resids_auto}
+\end{subfigure}
+\caption{The anomalies in our sample visualized with a UMAP in two dimensions, with different features used for the UMAP embedding.}
+\end{figure}
+
+
+\subsection{Visualization with UMAP}
+
+\KSF{I also have UMAPs of a 100k object subsample, which are clearer to compare the differences between autoencodings and pixels, but not as interesting bc they're not already subselected for anomalies. Worth showing? Also don't have much space... maybe in real paper?}
+To further investigate our sample of 3\sig anomalies, we visualize these images with a Uniform Manifold Approximation and Projection (UMAP, \citealt{McInnes2018}), which maps the objects into a two-dimensional representation.
+As an initial check, we apply a UMAP to the pixels of the original images in this sample, which have dimensionality $(96,96,3)$; this is shown in Figure \ref{fig:reals}.
+The images are colored by anomaly score.
+The UMAP shows some images outside of the main cluster with extremely high anomaly scores, but there is no clear pattern to the cluster.
+
+We expect the residual images, the absolute difference between the real and reconstructed images, to contain information about why the GAN marked an object as anomalous.
+The results of a UMAP embedding on the residual image pixels is shown in Figure \ref{fig:resids}.
+It is clear that this mapping has some structure, with high anomaly score objects clustering around the edges of the main cluster.
+Further inspection reveals that these regions have similar features, giving us a natural way to explore the types of anomalies that our method has identified.
+\KSF{do i need to show some examples from some of these regions?}
+
+
+\subsection{Dimensionality Reduction with a Convolutional Autoencoder}
+
+The residual image pixel space on which we applied the UMAP is very high-dimensional, and contains excess information less relevant to the anomalies we are interested in.
+To reduce the dimensionality of the data and isolate the relevant information, we trained a convolutional autoencoder to map image pixels to a 32-dimensional vector.
+The UMAP embedding of the autoencoded residual images is shown in Figure \ref{fig:resids_auto}.
+This mapping contains the clearest structure, with gradients in anomaly score in addition to clusters of high-scoring objects around the perimeter of the main cluster; this reveals that our approach of autoencoding the residual pixels allows us to better categorize and explore our set of GAN-detected anomalies.
+
+To show that the improvement is due to not just the autoencoding, we also show the UMAP of autoencoded original images (Figure \ref{fig:reals_auto}).
+While this reveals more structure than the UMAP on the image pixels, it is not as informative as the UMAP on the residual pixels or the autoencoded residuals.
+This shows that the autoencoder is allowing us to more cleanly extract the information in the residual images about the GAN's reason for flagging the object as anomalous.
+
+\subsection{Identified Anomalies}
+
+Through these processes of anomaly detection and characterization, we identified a sample of "interesting anomalies." These fell into a few different categories; we show examples from three of these categories in Figure \ref{fig:interesting}. We find a number of galaxies with tidal features imprinted by interaction events, as well as ongoing mergers (\ref{fig:tidal}). We identify a few galaxies that have extreme star formation regions (\ref{fig:starform}). We also found many compact blue sources, often in diffuse galaxies (\ref{fig:bluecore}), which may be extremely metal poor galaxies.
+
+\begin{figure}[t!] 
+\centering
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_tidalfeatures}  
+  \caption{Tidal features and merging galaxies.}
+  \label{fig:tidal}
+  \end{subfigure}
+\hfill
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_starforming}  
+  \caption{Galaxies with extreme star formation.}
+  \label{fig:starform}
+\end{subfigure}
+\hfill
+\begin{subfigure}{.32\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_bluecore}  
+  \caption{Blue compact objects in diffuse galaxies.}
+  \label{fig:bluecore}
+\end{subfigure}
+\caption{A sample of the anomalous images detected with our method.}
+\label{fig:interesting}
+\end{figure}
+
+We conducted follow-up spectroscopic observations of a few of these anomalies, to confirm that they are indeed interesting objects and learn more about them. We used the Keck telescope to obtain an optical spectrum of the blue compact source in the upper right of panel \ref{fig:bluecore}, shown in Figure \ref{fig:spectrum}. The ratio of $\mathrm{[NII]/H}\alpha$ to $\mathrm{[OIII]/H}\beta$ suggests that the object is star-forming. It also has asymmetric emission lines with slightly blue-shifted wings; this could indicate gaseous outflows, and has not been observed in similar objects. This follow-up observation confirmed that this source is anomalous, both in the sense of falling into an interesting and rare class of objects, and in having interesting properties as an individual object.
+\KSF{mention similarity to EMPGs?}
+\KSF{how to represent this spectrum? when see whole thing, can't see blue wings. also need to label lines?}
+
+\begin{figure} 
+  \centering
+  \includegraphics[width=0.9\textwidth]{bluedot_spectrum}  
+  \caption{Follow-up spectrum with the Keck telescope of one of our identified anomalies, the blue compact source in the upper right of panel \ref{fig:bluecore}. The spectrum indicates a star-forming galaxy with gaseous outflows.}
+  \label{fig:spectrum}
+\end{figure}
+
+We will release a catalog of our full set of identified anomalies.  
+\KSF{what else is there to say here?}
+
+\KSF{where to discuss pipeline/processing errors?}
+
+\section{Discussion \& Conclusions}
+
+We searched for anomalous objects in a sample of $\sim$940,000 Hyper Suprime-Cam images.
+We used a generative adversarial network (GAN) to build a generative model of our data space.
+This allowed us to identify images that are poorly represented by the model and thus more anomalous with respect to the rest of the data.
+\KSF{need to finish writing; what to discuss here? besides summarizing what we've done?}
+
+\section*{Broader Impact}
+
+\KSF{what to say here??}
+Authors are required to include a statement of the broader impact of their work, including its ethical aspects and future societal consequences. 
+Authors should discuss both positive and negative outcomes, if any. For instance, authors should discuss a) 
+who may benefit from this research, b) who may be put at disadvantage from this research, c) what are the consequences of failure of the system, and d) whether the task/method leverages
+biases in the data. If authors believe this is not applicable to them, authors can simply state this.
+
+Use unnumbered first level headings for this section, which should go at the end of the paper. {\bf Note that this section does not count towards the eight pages of content that are allowed.}
+
+\begin{ack}
+\KSF{TODO!}
+Use unnumbered first level headings for the acknowledgments. All acknowledgments
+go at the end of the paper before the list of references. Moreover, you are required to declare 
+funding (financial activities supporting the submitted work) and competing interests (related financial activities outside the submitted work). 
+More information about this disclosure can be found at: \url{https://neurips.cc/Conferences/2020/PaperInformation/FundingDisclosure}.
+
+
+Do {\bf not} include this section in the anonymized submission, only in the final paper. You can use the \texttt{ack} environment provided in the style file to autmoatically hide this section in the anonymized submission.
+\end{ack}
+
+\KSF{TODO: fix messed up citation}
+\bibliographystyle{mnras}
+\bibliography{Anomalies-HSC}
+
+\end{document}
