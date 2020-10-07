@@ -42,8 +42,7 @@ def readInfo(objidx, info_df):
 
 def main(folder, info_fn, thumbnail_folder, outputname):
 
-    info_df = pd.read_csv(info_fn)
-    info_df = info_df.set_index('Unnamed: 0')
+    info_df = pd.read_csv(info_fn).set_index('idx')
     print("Read in info file {} with {} rows".format(info_fn, len(info_df)))
     filepatterns = [r'.*idx([0-9]*).*.png']    
     datasets = ['COSMOS', 'acs']

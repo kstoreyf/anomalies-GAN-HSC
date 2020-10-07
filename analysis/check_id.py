@@ -24,8 +24,7 @@ save_dir = '../thumbnails/id_check'
 
 #cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_cosmos.csv'
 cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
-cat = pd.read_csv(cat_fn)
-cat = cat.set_index('Unnamed: 0')
+cat = pd.read_csv(cat_fn).set_index('idx')
 
 ### H5PY FILES ###
 print("Checking image in h5py files - imarr, results")

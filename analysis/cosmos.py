@@ -38,7 +38,7 @@ if not os.path.isfile(cat_cosmos_fn):
 else:
     cat_cosmos = pd.read_csv(cat_cosmos_fn)
 
-idxs_cosmos = np.array(cat_cosmos['Unnamed: 0'])
+idxs_cosmos = np.array(cat_cosmos['idx'])
 print(idxs_cosmos[:10])
 #print(cat_cosmos.index[:10])
 
