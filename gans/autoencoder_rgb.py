@@ -34,20 +34,20 @@ import utils
 
 
 DIM = 64 #dimension of autoencoder convolutions
-#DIM = 2
 NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 32
 ITERS = 30000#10000 # How many generator iterations to train for
-SAMPLE_ITERS = 500 #100 # Multiples at which to generate image sample
-SAVE_ITERS = 500 #1000 # Multiples at which to save the autoencoder state
+SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
+SAVE_ITERS = 1000 # Multiples at which to save the autoencoder state
 overwrite = True
-LATENT_DIM = 32
+LATENT_DIM = 64
 
-tag = 'gri_3sig'
+#tag = 'gri'
+#tag = 'gri_3sig'
 #tag = 'gri_cosmos'
-#tag = 'gri_100k'
+tag = 'gri_100k'
 results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
 #results_dir = '/archive/k/ksf293/kavli/anomaly/results'
 results_fn = f'{results_dir}/results_{tag}.h5'
@@ -55,7 +55,8 @@ results_fn = f'{results_dir}/results_{tag}.h5'
 #imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5' # NOTE NEW FORMAT
 #savetag = '_latent32_lr1e-2'
-savetag = f'_latent{LATENT_DIM}_real'
+#savetag = f'_latent{LATENT_DIM}_real'
+savetag = f'_latent{LATENT_DIM}'
 #savetag = '_aereal'
 
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/autoencoder_{tag}{savetag}/'
@@ -147,9 +148,9 @@ reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_res
                                                     results_fn, imarr_fn)
 residuals, reals, recons = utils.get_residuals(reals, recons)
 
-#data = residuals
-print("AUTOENCODING REALS (NOT RESIDUALS)")
-data = reals
+data = residuals
+#print("AUTOENCODING REALS (NOT RESIDUALS)")
+#data = reals
 data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=False, normalize=False, smooth=False)
 fixed_im, _ = data_gen.sample(128)
 
