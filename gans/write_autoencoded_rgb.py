@@ -27,17 +27,17 @@ NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 1000
 
-decode_latent = True
+decode_latent = False
 startcount = 0
 
-#tag = 'gri_100k'
+tag = 'gri_100k'
 #tag = 'gri_cosmos'
-tag = 'gri_3sig'
+#tag = 'gri_3sig'
 #aenum = 29500
-aenum = 29500
+aenum = 29000
 #aetag = '_aereal'
-aetag = '_latent32_real'
-#aetag = '_latent32'
+#aetag = '_latent32_real'
+aetag = '_latent64'
 #aetag = '_aetest'
 savetag = f'_model{aenum}{aetag}'
 results_dir = '/scratch/ksf293/kavli/anomaly/results'
@@ -57,9 +57,9 @@ reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_res
 residuals, reals, recons = utils.get_residuals(reals, recons) # this luptonizes the reals so we don't have to
 print(residuals.shape)
 
-#data = residuals
-print("WRITING AUTENCODES FOR REALS (NOT RESIDUALS)")
-data = reals
+data = residuals
+#print("WRITING AUTENCODES FOR REALS (NOT RESIDUALS)")
+#data = reals
 y = range(len(data))
 data_gen = lib.datautils.DataGenerator(data, y=y, batch_size=BATCH_SIZE, shuffle=False, once=True,
                                         luptonize=False, normalize=False, smooth=False)
