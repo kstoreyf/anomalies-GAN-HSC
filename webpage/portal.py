@@ -24,7 +24,6 @@ import logging
 import json
 import h5py
 from astropy.visualization import make_lupton_rgb
-import umap
 
 # The logger causes the __init__ function of astro_web to be called twice.
 # Not using it now, so comment out
@@ -52,7 +51,7 @@ def sdss_link(SpecObjID):
 
 
 def get_umaps(self, path, embedding=None):
-    print(f"Loading embeddings {os.listdir(path)}")
+    #print(f"Loading embeddings {os.listdir(path)}")
     # Embeddings as made by make_umap_rgb.py
     umap_dict = {}
     for p in np.sort(os.listdir(path)):
@@ -92,22 +91,23 @@ def load_emission_absorption_lines():
 
 @lrudecorator(5)
 def load_data(data_path):
-    print("Loading data")
+    #print("Loading data")
     #logger.info('Started Loading')
     data_fn = os.path.join(data_path, f'results_{tag}.h5')
     res = h5py.File(data_fn, 'r')
     #logger.info('Ended Loading')
 
     data = res["reals"]
-    idxs = [int(idx) for idx in res['idxs'][:]]
-
-    print("Getting object ids")
+    #idxs = [int(idx) for idx in res['idxs'][:]]
+    idxs = np.array(res['idxs'])
+    object_ids = np.array(res['object_ids'])
+    #print("Getting object ids")
     # read object ids from file; might want other data from here eventually
     # TODO: reading this takes a good bit - slowest part of init! should save to res file
-    info_df = pd.read_csv(info_fn)
-    print("Read in info file {} with {} rows".format(info_fn, len(info_df)))
-    info_df = info_df.set_index('Unnamed: 0')
-    object_ids = [str(info_df['object_id'].loc[idx]) for idx in idxs]    
+    #info_df = pd.read_csv(info_fn)
+    #print("Read in info file {} with {} rows".format(info_fn, len(info_df)))
+    #info_df = info_df.set_index('Unnamed: 0')
+    #object_ids = [str(info_df['object_id'].loc[idx]) for idx in idxs]    
     return data, idxs, object_ids
 
 
@@ -118,7 +118,7 @@ def reverse_galaxy_links(galaxy_links):
 
 
 def load_score_data(idxs_data):
-    print("Score data")
+    #print("Score data")
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
 
@@ -127,13 +127,13 @@ def load_score_data(idxs_data):
                   'Discriminator Score': res['disc_scores'][:]}
     recon = res['reconstructed'][:]
 
-    print("Done with score data")
+    #print("Done with score data")
     return score_dict, recon
 
 
 @lrudecorator(100)
 def get_score_data(field, idxs_data):
-    print("Score data")
+    #print("Score data")
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
     N = len(res['idxs'])
@@ -293,7 +293,7 @@ class astro_web(object):
         self.R_DOT = 10
         self.DECIMATE_NUMBER = 5000
         self.UMAP_XYLIM_DELTA = 0.5
-        self.umap_on_load = -1 #index of initial umap to load
+        self.umap_on_load = 1 #index of initial umap to load
         self.nof_stacks = 1
         self.n_anomalies = 51
         self.stack_by = 'x'
@@ -310,12 +310,18 @@ class astro_web(object):
         self.register_callbacks()
 
     def __call__(self, doc):
-        doc.add_root(column(row(  self.show_anomalies, self.select_anomalies_from,),
-        row(column(self.umap_figure, self.stacks_figure, row(self.prev_button, self.next_button)),
+        doc.add_root(
+        column(
+        row( self.main_title_div ),
+        #row( self.info_div ),
+        #row(  self.show_anomalies, self.select_anomalies_from,),
+        row(
+        column( self.info_div ),
+        column(self.umap_figure, self.stacks_figure, row(self.prev_button, self.next_button)),
                          column(#Div(text=""" """),
                                 self.select_umap, self.select_score, self.select_colormap,  #self.save_selected, #self.get_order,
-                                self.search_galaxy, self.select_galaxy, 
-                                self.data_figure, self.selected_galaxies_table, self.title_div  
+                                self.search_galaxy, #self.select_galaxy, 
+                                self.data_figure, self.selected_galaxies_table#, self.title_div  
                                 ))))
         doc.title = 'HSC Galaxies'
 
@@ -366,12 +372,30 @@ class astro_web(object):
         self.anomaly_detection_algorithms = get_anomalies_dict(self.galaxy_links)
         self.select_anomalies_from = RadioButtonGroup(labels=list(self.anomaly_detection_algorithms.keys()), active=0 )
         self.show_anomalies = Button(label="Show anomalies (detected by ... )", button_type="warning")
-
-        self.select_galaxy = TextInput(title='Choose Galaxy Index:', value='0')
+        self.first_im_index = 8175
+        self.select_galaxy = TextInput(title='Select Galaxy Index:', value=str(self.first_im_index))
 
         self.next_button = Button(label="Next", button_type="default")
         self.prev_button = Button(label="Previous", button_type="default")
 
+        self.main_title_div = Div(text='<center>Anomalous Galaxy Visualization Tool</center>', style={'font-size': '300%', 'color': 'black'}, sizing_mode="stretch_width")
+        info_text = """
+        <p><b>What is this?</b></p>
+        <p>This is an interactive tool for visualizing the results of an anomaly detection approach on a set of galaxies. Each dot is a galaxy image from the Hyper Suprime-Cam survey. The distribution is a UMAP, a 2D representation of the images. The colors show how anomalous our generative adversarial network (GAN) found each galaxy. Choose the UMAP embedding and the colormapping on the right; the default is UMAP on autencoded residuals, colored by total anomaly score.</p>
+        
+        <p><b>Cool! How do I use it?</b></p>
+        <ul>
+            <li>Use the lasso to select a region of galaxies; these will appear in the bottom squares. Scroll through them with the 'Previous' and 'Next' buttons.
+            <li>The selected galaxies will also appear in the table on the right; sort them by clicking the column names. Click a row to see the image in the large viewbox.
+            <li>Use the zoom tool to see more galaxies in an area; only a subset are shown (and will be selected) on the main plot.
+            <li>Type a galaxy ID in the text box and hit enter to jump to that image on the plot and in the viewbox.
+            <li>Double click anywhere on the plot to reset it.
+        </ul>
+        <p>Find the code for this project on <a href="https://github.com/kstoreyf/anomalies-GAN-HSC">github</a>. Happy weird-galaxy-finding!</p>
+        <p><b>Author:</b> Kate Storey-Fisher</p>
+        <p><i>Adapted from the <a href="https://toast-docs.readthedocs.io/en/latest/">SDSS galaxy portal</a> by Itamar Reis</i></p>
+        """
+        self.info_div = Div(text=info_text, style={'font-size': '120%', 'color': 'black'})#, sizing_mode="stretch_width")
         self.title_div = Div(text='<center>Author: Kate Storey-Fisher \n Adapted from: Itamar Reis</center>', style={'font-size': '200%', 'color': 'teal'})
         self.link_div = Div(text='<center>View galaxy in <a href="{}" target="_blank">{}</a></center>'.format(
             self.galaxy_link(int(self.select_galaxy.value)), 'SDSS object explorer'),
@@ -384,7 +408,7 @@ class astro_web(object):
             TableColumn(field="score", title="Score", formatter=NumberFormatter(format = '100.00')),
         ]
 
-        self.search_galaxy = TextInput(title='Search Galaxy SpecObjID:')
+        self.search_galaxy = TextInput(title='Select Galaxy Info ID:')
 
 
     def umap_figure_axes(self):
@@ -469,6 +493,7 @@ class astro_web(object):
 
         # TODO: make this the index
         t = Title()
+        #info_id = self.select_galaxy.value
         ind = self.select_galaxy.value
         info_id = int(self.galaxy_links[int(ind)])
         t.text = '{}'.format(info_id)
@@ -547,7 +572,7 @@ class astro_web(object):
         self.points = np.array(points)
         self.umap_view = CDSView(source=self.umap_source_view)
 
-        im = process_image(self.ims_gal[0])
+        im = process_image(self.ims_gal[self.first_im_index])
         xsize, ysize = self.imsize
         self.data_source = ColumnDataSource(
             data = {'image':[im], 'x':[0], 'y':[0], 'dw':[xsize], 'dh':[ysize]}
@@ -672,21 +697,18 @@ class astro_web(object):
 
 
     def select_stack_by_callback(self):
-        print("select stack by")
         def callback(attrname, old, new):
             self.stack_by = self.select_stack_by.value
         return callback
 
 
     def select_nof_stacks_callback(self):
-        print("select nof stacks")
         def callback(attrname, old, new):
             self.nof_stacks = int(self.select_nof_stacks.value)
         return callback
 
 
     def update_color(self):
-        print("update color")
         def callback(attrname, old, new):
 
             self.umap_figure_axes()
@@ -755,7 +777,6 @@ class astro_web(object):
 
 
     def next_stack_index(self):
-        print('next')
         selected_objects = self.selected_objects.data['index']
         nof_selected = len(selected_objects)
         new_index = self.stack_index + self.ncol*self.nrow
@@ -765,7 +786,6 @@ class astro_web(object):
 
 
     def prev_stack_index(self):
-        print('prev')
         if self.stack_index != 0:
             self.stack_index -= self.ncol*self.nrow
             self.stacks_callback()
@@ -879,6 +899,7 @@ class astro_web(object):
             print('galaxy callback')
             specobjid = str(self.search_galaxy.value)
             new_specobjid = str(int(self.galaxy_links[int(index)]))
+            #new_specobjid = str(
             #logger.debug(type(specobjid), specobjid, type(new_specobjid), new_specobjid)
             #print(specobjid, new_specobjid)
             if specobjid != new_specobjid:
@@ -1260,11 +1281,16 @@ def process_image(im):
 # a = astro_web(data_type, data_path)
 if __name__ == '__main__':
     lh = 5006
-    print('Opening Bokeh application on http://localhost:{}/'.format(lh))
+    websockets = ['104.248.124.15','104.248.124.15:{}'.format(lh), f'localhost:{lh}', 'weirdgalaxi.es'] #my digitalocean server
+    print('Opening Bokeh application on {}'.format(websockets))
+    server = Server({'/': get_astro_session}, num_procs=1, #0 autodetects # cores
+                    allow_websocket_origin=websockets, show=False,
+                    port=lh, prefix='/')
 
-    websockets = ['localhost:{}'.format(lh)]
-    server = Server({'/galaxies': get_astro_session}, num_procs=0,
-                    allow_websocket_origin=websockets, show=False)
+    #print('Opening Bokeh application on http://localhost:{}/'.format(lh))
+    #websockets = ['localhost:{}'.format(lh)]
+    #server = Server({'/galaxies': get_astro_session}, num_procs=0,
+    #                allow_websocket_origin=websockets, show=False)
     server.start() # this line doesn't seem to do anything, but also doesn't hurt...
     # KSF: found this code here, but not sure what it's doing https://riptutorial.com/bokeh/example/29716/local-bokeh-server-with-console-entry-point
     # server.io_loop.add_callback(server.show, "/") # this was commented out
