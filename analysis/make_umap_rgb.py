@@ -16,8 +16,8 @@ import utils
 
 def main():
    
-    #tag = 'gri_3sig'
-    tag = 'gri_100k'
+    tag = 'gri_3signorm'
+    #tag = 'gri_100k'
     #tag = 'gri_cosmos'
     base_dir = '/scratch/ksf293/kavli/anomaly'
     #base_dir = '..'
@@ -26,12 +26,12 @@ def main():
     plot_dir = f'../plots/plots_2020-07-08'
     savetag = ''
 
-    aenum = 29500
-    #aenum = 9500
+    #aenum = 29500
+    aenum = 16000
     
     #aetag = '_latent32_real'
-    aetag = '_latent16_real'
-    #aetag = '_latent32'
+    #aetag = '_latent64_reals'
+    aetag = '_latent64_residuals'
     autotag = f'_model{aenum}{aetag}'
 
     
@@ -63,6 +63,7 @@ def main():
         savetag += f'_nn{n_neighbors}md{min_dist}'
     
     save_fn = f'{base_dir}/results/embeddings/embedding_umap_{mode}_{tag}{savetag}.npy'
+    print(save_fn)
     plot_fn = f'{plot_dir}/umap_{mode}_{tag}{savetag}.png'
     
     if mode=='auto':
@@ -73,7 +74,7 @@ def main():
     if mode=='reals':
         values = reals    
     if mode=='residuals':
-        residuals, _, _ = utils.get_residuals(reals, recons)
+        residuals = utils.get_residuals(reals, recons)
         values = residuals
    
     print(f"UMAP-ping {len(values)} values") 

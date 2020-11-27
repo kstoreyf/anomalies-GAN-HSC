@@ -67,7 +67,7 @@ def get_residuals(reals, recons):
     recons = np.array(recons)
     recons = recons.reshape((-1,96,96,NBANDS)).astype('int')
     resids = abs(reals-recons)
-    return resids, reals, recons
+    return resids
 
 
 def get_autoencoded(auto_fn, n_anoms=0, sigma=0):
