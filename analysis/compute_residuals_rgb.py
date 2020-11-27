@@ -14,7 +14,8 @@ import utils
 
 def main():
    
-    #tag = 'gri_3sig'
+    #tag = 'gri'
+    #tag = 'gri_3signorm'
     tag = 'gri_100k'
     #tag = 'gri_cosmos'
 
@@ -28,9 +29,11 @@ def main():
     reals = imarr['images']
     recons = res['reconstructed']
 
-    _, _, resids = utils.get_residuals(reals, recons)
+    resids = utils.get_residuals(reals, recons)
 
     print("Creating new dataset")
+    if 'residuals' in res.keys():
+        del res['residuals']
     res.create_dataset("residuals", data=resids, dtype='uint8')
 
     imarr.close()

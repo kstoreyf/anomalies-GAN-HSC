@@ -16,8 +16,9 @@ NBANDS = 3
 
 def main():
    
-    #tag = 'gri_3sig'
-    tag = 'gri_100k'
+    #tag = 'gri'
+    tag = 'gri_3signorm'
+    #tag = 'gri_100k'
     #tag = 'gri_cosmos'
 
     imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
