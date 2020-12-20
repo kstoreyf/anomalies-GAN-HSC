@@ -35,7 +35,7 @@ path_dict = dict(
     galaxies='results/'
 )
 
-tag = 'gri_3sig'
+tag = 'gri_3signorm'
 #tag = 'gri_cosmos'
 data_type = 'galaxies'
 data_path = path_dict[data_type]
@@ -122,9 +122,9 @@ def load_score_data(idxs_data):
     results_dir = os.path.join(results_path, f'results_{tag}.h5')
     res = h5py.File(results_dir, 'r')
 
-    score_dict = {'Anomaly Score': res['anomaly_scores'][:],
-                  'Generator Score': res['gen_scores'][:],
-                  'Discriminator Score': res['disc_scores'][:]}
+    score_dict = {'Anomaly Score': res['anomaly_scores_norm'][:],
+                  'Generator Score': res['gen_scores_norm'][:],
+                  'Discriminator Score': res['disc_scores_norm'][:]}
     recon = res['reconstructed'][:]
 
     #print("Done with score data")
@@ -288,9 +288,10 @@ class astro_web(object):
         self.imsize = [self.ims_gal[0].shape[0], self.ims_gal[0].shape[1]]
         self.reverse_galaxy_links = reverse_galaxy_links(self.galaxy_links)
         self.umap_data = get_umaps(self, umaps_path, embedding='umap_auto')
-        self.color_mapper = LinearColorMapper(palette=Viridis256, low=0, high=1, nan_color=RGB(220, 220, 220, a = 0.1))
+        Plasma256.reverse()
+        self.color_mapper = LinearColorMapper(palette=Plasma256, low=0, high=1, nan_color=RGB(220, 220, 220, a = 0.1))
         self.high_colormap_factor = 0.1
-        self.R_DOT = 10
+        self.R_DOT = 6#10
         self.DECIMATE_NUMBER = 5000
         self.UMAP_XYLIM_DELTA = 0.5
         self.umap_on_load = 1 #index of initial umap to load
@@ -361,7 +362,7 @@ class astro_web(object):
         self.cmap_menu = [(p,p) for p in list(all_palettes.keys())]
         #[('Viridis','Viridis256'),('Plasma','Plasma256'),('Inferno','Inferno256'), ('Magma','Magma256')]
         self.select_colormap =  Dropdown(label='Colormap', button_type="default",
-                                                   menu = self.cmap_menu , value='viridis')
+                                                   menu = self.cmap_menu , value='plasma_r')
 
         maps = list(self.umap_data.keys())
         menu_all = [(u,u) for u in maps]
@@ -405,7 +406,7 @@ class astro_web(object):
             TableColumn(field="index", title="Index"),
             TableColumn(field="info_id", title="Info ID"),
             TableColumn(field="object_id", title="Object ID"),
-            TableColumn(field="score", title="Score", formatter=NumberFormatter(format = '100.00')),
+            TableColumn(field="score", title="Score", formatter=NumberFormatter(format = '0.0000')),
         ]
 
         self.search_galaxy = TextInput(title='Select Galaxy Info ID:')
@@ -620,7 +621,7 @@ class astro_web(object):
                                                      nonselection_line_color = 'moccasin',
                                                      nonselection_alpha = 1,
                                                      nonselection_line_alpha = 0,
-                                                     #alpha=1,
+                                                     alpha=0.5,
                                                      line_color=None,
                                                      size='radius',
                                                      view=self.umap_view)
