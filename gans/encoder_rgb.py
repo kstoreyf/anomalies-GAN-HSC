@@ -36,28 +36,28 @@ NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 32
-ITERS = 30000 # How many generator iterations to train for
+ITERS = 10000 # How many generator iterations to train for
 SAMPLE_ITERS = 250 # Multiples at which to generate image sample
 SAVE_ITERS = 1000
 overwrite = True
 
-#tag = 'i20.0_norm'
-#tag = 'i20.0_norm_100k'
 tag = 'gri'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
-savetag = ''
+lambda_weight = 0.5
+savetag = '_lambda{lambda_weight}'
 
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/encoder_{tag}{savetag}/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
+# directory used to be called "out", changed to "wgan"
 gentag = 'gri_save'
 gennum = 10000
-gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/out_{gentag}/model-gen-{gennum}'
+gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{gentag}/model-gen-{gennum}'
 
 disctag = gentag
 discnum = gennum
-disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/out_{disctag}/model-disc-{discnum}'
+disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{disctag}/model-disc-{discnum}'
 
 lib.print_model_settings(locals().copy())
 
@@ -114,8 +114,12 @@ feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
                     )), axis=[1,2,3])
 residual = tf.reduce_sum(tf.abs(tf.subtract(real, reconstructed)), axis=1)
 
-anomaly_weight = 0.05
-anomaly_score = (1-anomaly_weight)*residual + anomaly_weight*feature_residual
+anomaly_score = (1-lambda_weight)*residual + lambda_weight*feature_residual
+print("score parts")
+print(residual)
+print((1-lambda_weight)*residual, lambda_weight*feature_residual)
+print(anomaly_score)
+
 
 enc_cost = tf.reduce_sum(anomaly_score)
 
@@ -163,6 +167,7 @@ with tf.Session() as sess:
         if (iteration < 5):
             lib.plot.flush()
         if (iteration % SAMPLE_ITERS == 0) or (iteration==ITERS-1):
+            print("iteration {}, generating samples".format(iteration))
             lib.plot.flush()
             generate_image(iteration)
             #print(_z, _enc_cost)
