@@ -35,26 +35,24 @@ DIM = 64
 NSIDE = 96
 NBANDS = 3
 OUTPUT_DIM = NSIDE*NSIDE*NBANDS
-BATCH_SIZE = 1024
-#BATCH_SIZE = 1
+BATCH_SIZE = 1000
 ITERS = 10
 
-tag = 'gri'
-#tag = 'i20.0_norm'
+tag = 'gri_100k'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
-savetag = ''
-#startcount = 942
+lambda_weight = 0.3
+savetag = f'_lambda{lambda_weight}'
 startcount = 0
 
 gentag = 'gri_save'
 gennum = 10000
-gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/out_{gentag}/model-gen-{gennum}'
+gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{gentag}/model-gen-{gennum}'
 
 disctag = gentag
 discnum = gennum
-disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/out_{disctag}/model-disc-{discnum}'
+disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{disctag}/model-disc-{discnum}'
 
-enctag = 'gri_save'
+enctag = f'gri_lambda{lambda_weight}'
 encnum = 5000
 enc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/encoder_{enctag}/model-encoder-{encnum}'
 
@@ -79,6 +77,13 @@ z_ass = z.assign(z_plhdr)
 
 reconstructed = Generator(z)
 
+print(Discriminator(real, signature='feature_match'))
+print(Discriminator(reconstructed, signature='feature_match'))
+disc_residual = tf.subtract(
+                    Discriminator(real, signature='feature_match'),
+                    Discriminator(reconstructed, signature='feature_match')
+                    )
+print(disc_residual)
 feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
                     Discriminator(real, signature='feature_match'),
                     Discriminator(reconstructed, signature='feature_match')
@@ -86,8 +91,7 @@ feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
 
 residual = tf.reduce_sum(tf.abs(tf.subtract(real, reconstructed)), axis=1)
 
-anomaly_weight = 0.05
-anomaly_score = (1-anomaly_weight)*residual + anomaly_weight*feature_residual
+anomaly_score = (1-lambda_weight)*residual + lambda_weight*feature_residual
 
 t_vars = tf.trainable_variables()
 params = [var for var in t_vars if 'ano_z' in var.name]
@@ -99,13 +103,9 @@ optimizer = tf.train.AdamOptimizer(
     ).minimize(anomaly_score, var_list=params)
 
 
-#hfile = lib.datautils.load(imarr_fn, dataset=None)
-#fim = h5py.File(imarr_fn,"r")
 if not os.path.isfile(result_fn):
     print(f"Making new result file at {result_fn}")
     fres = h5py.File(result_fn,"w")
-    #fres.create_dataset('idxs', data=fim['idxs'])
-    #fres.create_dataset('object_ids', data=fim['object_ids'])
     fres.create_dataset('idxs', (0,), maxshape=(None,), chunks=(BATCH_SIZE,))
     fres.create_dataset('object_ids', (0,), maxshape=(None,), chunks=(BATCH_SIZE,))
     fres.create_dataset('reconstructed', (0,NSIDE,NSIDE,NBANDS), maxshape=(None,NSIDE,NSIDE,NBANDS), chunks=(1,NSIDE,NSIDE,NBANDS), dtype='uint8')
@@ -123,15 +123,12 @@ else:
 
 
 print("Loading data")
-#data = lib.datautils.load_numpy(imarr_fn)
 data = lib.datautils.load(imarr_fn, dataset='images')
 print("data")
 idxs = lib.datautils.load(imarr_fn, dataset='idxs')
 print("idxs")
 object_ids = lib.datautils.load(imarr_fn, dataset='object_ids')
 print("object_ids")
-#metadata = np.array([idxs,object_ids]).T
-#metadata = list(zip(idxs, object_ids))
 indices_now = np.arange(data.len())
 print("Initializing generator")
 data_gen = lib.datautils.DataGenerator(data, y=indices_now, batch_size=BATCH_SIZE, luptonize=True, shuffle=False, starti=count, once=True)
@@ -144,13 +141,9 @@ def resize_datasets(f, addsize):
     for dataset in datasets:
         f[dataset].resize(f[dataset].shape[0]+addsize, axis=0)
 
-#with tf.Session() as sess:
-#sess.run(tf.global_variables_initializer())
     
 start = time.time()
-#result = []
 moredata = True
-#count = 0
 nbatches = 0
 loc = startcount*BATCH_SIZE
 while moredata:
@@ -165,28 +158,16 @@ while moredata:
         print('getting images')        
         _images, _indices_now = data_gen.next()
         nimages = len(_images)
-        #print('getting metadata')
-        #_idxs = idxs[list(_indices_now)]
-        #_object_ids = object_ids[list(indices_now)]
-        #_idxs, _object_ids = _meta
-        #print(_indices_now)
-        #print(_idxs)
         if data_gen.is_done:
             moredata = False
-        #_images = data[loc:loc+BATCH_SIZE].reshape((-1, OUTPUT_DIM))
-        #_idxs = idxs[loc:loc+BATCH_SIZE]
-        #_object_ids = object_ids[loc:loc+BATCH_SIZE]
-        print(fres['idxs'].shape)
+        
         print('resizing datasets')
         resize_datasets(fres, nimages)
-        print(fres['idxs'].shape)
 
         print('encoding')
         _zinit_tensor = Encoder(_images)
         _zinit = sess.run(_zinit_tensor)
         
-        print(_zinit.shape)
-                
         #pad
         if nimages<BATCH_SIZE:
             _zinit_padded = np.zeros((BATCH_SIZE, 128))
@@ -202,7 +183,6 @@ while moredata:
         _z_ass = sess.run([z_ass], feed_dict={z_plhdr:_zinit})
         
         _z = sess.run([z])
-        #_zinit = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
         feed_dict={real: _images}
         for j in range(ITERS):
             _residual, _feature_residual, _score, _reconstructed, _ = sess.run(
@@ -211,12 +191,9 @@ while moredata:
 
         _reconstructed = _reconstructed.reshape((-1, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1)
         _reconstructed = (255.*_reconstructed).astype('uint8')
-        #result = []
-        #for bb in range(BATCH_SIZE):
+        
         print('saving')
         for bb in range(nimages):
-            #print(_images[bb][:4])
-            #print(idx[bb])
             idx = idxs[_indices_now[bb]]
             objid = object_ids[_indices_now[bb]]
             fres['idxs'][count] = idx
@@ -227,23 +204,13 @@ while moredata:
             fres['anomaly_scores'][count] = _score[bb]
             fres.attrs['count'] = count+1
             count += 1
-            #result.append([_images[bb], _reconstructed[bb], _residual[bb], _feature_residual[bb], _score[bb], idx[bb]])
         
-        #loc += BATCH_SIZE
-        #if loc>=len(data):
-        #    moredata = 0
         e0 = time.time()
         print(f't iter: {e0-s0}')
                         
     fres.close() 
-        #if os.path.isfile(result_fn):
-        #    os.rename(result_fn, f'{result_fn[:-4]}-backup.png')
-        #np.save(result_fn, np.array(result))
-        #np.save( f'{results_dir}/results_{tag}{savetag}-{count}.npy', np.array(result))
-        #count += 1
+
 end = time.time()
 print(f"Time for {len(data)} images: {end-start} s")
 
-#fim.close()
-#fres.close()
 print("Done")

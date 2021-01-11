@@ -38,25 +38,25 @@ NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 32
-ITERS = 30000#10000 # How many generator iterations to train for
+ITERS = 31000#10000 # How many generator iterations to train for
 SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
 SAVE_ITERS = 1000 # Multiples at which to save the autoencoder state
 overwrite = True
-LATENT_DIM = 64
+LATENT_DIM = 32
 
 #tag = 'gri'
-#tag = 'gri_3sig'
+#tag = 'gri_3signorm'
 #tag = 'gri_cosmos'
 tag = 'gri_100k'
 results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
 #results_dir = '/archive/k/ksf293/kavli/anomaly/results'
 results_fn = f'{results_dir}/results_{tag}.h5'
-#results_fn = f'{results_dir}/results_{tag}.npy'
-#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5' # NOTE NEW FORMAT
 #savetag = '_latent32_lr1e-2'
 #savetag = f'_latent{LATENT_DIM}_real'
-savetag = f'_latent{LATENT_DIM}'
+mode = 'residuals'
+#mode = "reals"
+savetag = f'_latent{LATENT_DIM}_{mode}'
 #savetag = '_aereal'
 
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/autoencoder_{tag}{savetag}/'
@@ -144,13 +144,11 @@ ae_optimizer = tf.train.AdamOptimizer(
     ).minimize(loss, var_list=params)
 
 print("Loading data")
-reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(
-                                                    results_fn, imarr_fn)
-residuals, reals, recons = utils.get_residuals(reals, recons)
+#reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(
+#                                                    results_fn, imarr_fn)
+#residuals, reals, recons = utils.get_residuals(reals, recons)
+data = lib.datautils.load(results_fn, dataset=mode) #trying this!
 
-data = residuals
-#print("AUTOENCODING REALS (NOT RESIDUALS)")
-#data = reals
 data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=False, normalize=False, smooth=False)
 fixed_im, _ = data_gen.sample(128)
 
@@ -198,6 +196,7 @@ with tf.Session() as sess:
             lib.plot.flush()
             #generate_image(iteration)
         if (iteration % SAVE_ITERS == 0) and iteration>0:
+            print(iteration)
             generate_image(iteration)
             ae_fn = out_dir+f'model-autoencoder-{iteration}'
             if overwrite and os.path.isdir(ae_fn):
