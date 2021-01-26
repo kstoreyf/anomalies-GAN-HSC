@@ -17,11 +17,13 @@ NBANDS = 3
 def main():
    
     #tag = 'gri'
-    tag = 'gri_3signorm'
+    #tag = 'gri_3signorm'
     #tag = 'gri_100k'
-    #tag = 'gri_cosmos'
+    #tag = 'gri_lambda0.3_1.5sigdisc'
+    imtag = 'gri_10k'
+    tag = 'gri_10k_lambda0.3'   
 
-    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+    imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{imtag}.h5'
     results_dir = f'/scratch/ksf293/kavli/anomaly/results'
     results_fn = f'{results_dir}/results_{tag}.h5'
 

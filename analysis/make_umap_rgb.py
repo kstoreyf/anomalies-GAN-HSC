@@ -9,6 +9,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import h5py
 
 import umap
 
@@ -16,24 +17,25 @@ import utils
 
 def main():
    
-    tag = 'gri_3signorm'
+    #tag = 'gri_3signorm'
     #tag = 'gri_100k'
     #tag = 'gri_cosmos'
+    tag = 'gri_lambda0.3_1.5sigdisc'
     base_dir = '/scratch/ksf293/kavli/anomaly'
     #base_dir = '..'
     #plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2020-07-08'
     make_plot = False
-    plot_dir = f'../plots/plots_2020-07-08'
+    plot_dir = f'../plots/plots_2020-01-10'
     savetag = ''
 
-    #aenum = 29500
+    #mode = 'disc_features_resid'
+    #mode = 'reals'
+    mode = 'residuals'
+    #mode = 'auto'
+
     aenum = 16000
-    
-    #aetag = '_latent32_real'
-    #aetag = '_latent64_reals'
     aetag = '_latent64_residuals'
     autotag = f'_model{aenum}{aetag}'
-
     
     results_dir = f'{base_dir}/results'
     results_fn = f'{results_dir}/results_{tag}.h5'
@@ -42,10 +44,6 @@ def main():
 
     imarr_fn = f'{base_dir}/data/images_h5/images_{tag}.h5'
 
-    #mode = 'reals'
-    mode = 'residuals'
-    #mode = 'auto'
-    
     # dataset choices
     n_anoms = 0
     sigma = 0
@@ -68,14 +66,20 @@ def main():
     
     if mode=='auto':
         values, idxs, scores = utils.get_autoencoded(auto_fn, n_anoms=n_anoms, sigma=sigma)
-    elif mode=='reals' or mode=='residuals':
-        reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
-    
-    if mode=='reals':
-        values = reals    
-    if mode=='residuals':
-        residuals = utils.get_residuals(reals, recons)
-        values = residuals
+    else:
+        res = h5py.File(results_fn, 'r')
+        values = res[mode][:]
+        idxs = res['idxs'][:]
+        scores = res['disc_scores_sigma'][:]
+
+    #elif mode=='reals' or mode=='residuals':
+    #    reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
+    #
+    #if mode=='reals':
+    #    values = reals    
+    #if mode=='residuals':
+    #    residuals = utils.get_residuals(reals, recons)
+    #    values = residuals
    
     print(f"UMAP-ping {len(values)} values") 
     result = embed(values, idxs, scores, save_fn, n_neighbors=n_neighbors, min_dist=min_dist)

@@ -37,25 +37,35 @@ DIM = 64 #dimension of autoencoder convolutions
 NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
-BATCH_SIZE = 32
-ITERS = 31000#10000 # How many generator iterations to train for
-SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
-SAVE_ITERS = 1000 # Multiples at which to save the autoencoder state
+BATCH_SIZE = 30
+ITERS = 5100#10000 # How many generator iterations to train for
+SAMPLE_ITERS = 100 # Multiples at which to generate image sample
+SAVE_ITERS = 100 # Multiples at which to save the autoencoder state
 overwrite = True
 LATENT_DIM = 32
 
 #tag = 'gri'
 #tag = 'gri_3signorm'
 #tag = 'gri_cosmos'
-tag = 'gri_100k'
+imtag = 'gri_10k'
+tag = 'gri_10k_lambda0.3'
 results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
 #results_dir = '/archive/k/ksf293/kavli/anomaly/results'
 results_fn = f'{results_dir}/results_{tag}.h5'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5' # NOTE NEW FORMAT
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{imtag}.h5' # NOTE NEW FORMAT
 #savetag = '_latent32_lr1e-2'
 #savetag = f'_latent{LATENT_DIM}_real'
-mode = 'residuals'
+mode = 'disc_features_real'
+#mode = 'residuals'
 #mode = "reals"
+if 'disc' in mode:
+    NSIDE = 6
+    NBANDS = 512
+    IMAGE_DIM = NSIDE*NSIDE*NBANDS
+    save_ims = False
+else:
+    save_ims = True
+
 savetag = f'_latent{LATENT_DIM}_{mode}'
 #savetag = '_aereal'
 
@@ -160,11 +170,12 @@ fixed_im_samples = AutoEncoder(fixed_im.reshape((-1,IMAGE_DIM))) #fixed latent s
 print("Fixed im samples") # dim (128, 27648)
 print(fixed_im_samples.shape)
 fixed_im = fixed_im.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1)
-lib.save_images.save_images(
+if save_ims:
+    lib.save_images.save_images(
         fixed_im,
         out_dir+'real.png',
         unnormalize=False
-    )
+         )
 def generate_image(frame):
     samples = sess.run(fixed_im_samples)
     #print("samples")
@@ -197,7 +208,8 @@ with tf.Session() as sess:
             #generate_image(iteration)
         if (iteration % SAVE_ITERS == 0) and iteration>0:
             print(iteration)
-            generate_image(iteration)
+            if save_ims:
+                generate_image(iteration)
             ae_fn = out_dir+f'model-autoencoder-{iteration}'
             if overwrite and os.path.isdir(ae_fn):
                 shutil.rmtree(ae_fn)

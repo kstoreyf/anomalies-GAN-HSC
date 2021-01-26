@@ -79,11 +79,11 @@ reconstructed = Generator(z)
 
 print(Discriminator(real, signature='feature_match'))
 print(Discriminator(reconstructed, signature='feature_match'))
-disc_residual = tf.subtract(
-                    Discriminator(real, signature='feature_match'),
-                    Discriminator(reconstructed, signature='feature_match')
-                    )
-print(disc_residual)
+#disc_residual = tf.subtract(
+#                    Discriminator(real, signature='feature_match'),
+#                    Discriminator(reconstructed, signature='feature_match')
+#                    )
+#print(disc_residual)
 feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
                     Discriminator(real, signature='feature_match'),
                     Discriminator(reconstructed, signature='feature_match')

@@ -16,8 +16,8 @@ def main():
     #tag = 'gri_3sig'
     #tag = 'gri_100k'
     #tag = 'gri_cosmos'
-    #restag = 'gri_lambda0.3'
-    restag = 'gri'
+    restag = 'gri_lambda0.3'
+    #restag = 'gri'
 
     results_dir = f'/scratch/ksf293/kavli/anomaly/results'
     results_fn = f'{results_dir}/results_{restag}.h5'

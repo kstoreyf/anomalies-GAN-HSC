@@ -15,15 +15,16 @@ import time
 def main():
   
     imtag_orig = 'gri'
-    imtag_new = 'gri_3sigdisc'
-    restag_orig = 'gri'
-    restag_new = 'gri_3sigdisc'
-    #imtag_new = 'gri_lambda0.3_3sigdisc'
-    #restag_orig = 'gri_lambda0.3'
-    #restag_new = 'gri_lambda0.3_3sigdisc' 
+    #imtag_new = 'gri_3sigdisc'
+    #restag_orig = 'gri'
+    #restag_new = 'gri_3sigdisc'
+    imtag_new = 'gri_lambda0.3_1.5sigdisc'
+    restag_orig = 'gri_lambda0.3'
+    restag_new = 'gri_lambda0.3_1.5sigdisc' 
 
     start = time.time()
 
+    # WARNING! this requires the imtag_orig and restag_orig to have the same objects in the same order. which it usually will, but should check 
     res_dir = '/scratch/ksf293/kavli/anomaly/results'
     res_fn_orig = f'{res_dir}/results_{restag_orig}.h5'
     res_fn_new = f'{res_dir}/results_{restag_new}.h5'
@@ -39,14 +40,14 @@ def main():
     res_orig.close()
 
     # choose objects with high disc score AND low gen score
-    thresh = 3 #sigma
-    locs_3sig = np.where((gen_scores_sigma<thresh) & (disc_scores_sigma>thresh))[0]
+    thresh = 1.5 #sigma
+    locs_new = np.where((disc_scores_sigma>gen_scores_sigma) & (disc_scores_sigma>thresh))[0]
 
-    subsample_file(imarr_fn_orig, imarr_fn_new, locs_3sig)
-    subsample_file(res_fn_orig, res_fn_new, locs_3sig)
+    subsample_file(imarr_fn_orig, imarr_fn_new, locs_new)
+    subsample_file(res_fn_orig, res_fn_new, locs_new)
 
     end = time.time()
-    print("Time:", (end-start)/60.0)
+    print("Time:", (end-start)/60.0, "min")
 
     print("Done!")
 
