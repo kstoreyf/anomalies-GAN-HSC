@@ -1,5 +1,4 @@
 *.s
-py2tf.sh
 py3tf.sh
 gan_output/
 data/
@@ -8,7 +7,7 @@ logs/
 log.pkl
 submit_scripts/
 *.swp
-cred.dat
+hsc_credentials.dat
 thumbnails/
 training_output/
 plots/
