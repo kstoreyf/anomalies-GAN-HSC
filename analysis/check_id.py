@@ -14,23 +14,24 @@ from unagi.task import hsc_tricolor, hsc_cutout
 
 from utils import luptonize
 
-
-tag = 'gri_cosmos'
+tag = 'gri_lambda0.3_1.5sigdisc'
+#tag = 'gri_cosmos'
 #tag = 'gri_3sig'
 #idx_tocheck = 937431
 #idx_tocheck = 406992
-idx_tocheck = 935811
+#idx_tocheck = 935811
+idx_tocheck = 22
 save_dir = '../thumbnails/id_check'
 
-#cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_cosmos.csv'
-cat_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
-cat = pd.read_csv(cat_fn).set_index('idx')
+base_dir = '/scratch/ksf293/anomalies'
+info_fn = f'../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
+info_df = pd.read_csv(info_fn, usecols=['object_id', 'idx', 'ra_x', 'dec_x'], squeeze=True)
+info_df = info_df.set_index('idx')
 
 ### H5PY FILES ###
 print("Checking image in h5py files - imarr, results")
-
-imarr_fn = '../data/images_h5/images_{}.h5'.format(tag)
-results_fn = '../results/results_{}.h5'.format(tag)
+imarr_fn = f'{base_dir}/data/images_h5/images_{tag}.h5'
+results_fn = f'{base_dir}/results/results_{tag}.h5'
 
 imarr = h5py.File(imarr_fn, 'r')
 res = h5py.File(results_fn, 'r')
@@ -72,13 +73,14 @@ plt.savefig(f"{save_dir}/thumbnail_{tag}_{idx_tocheck}_reconstructed.png")
 ### CHECK HSC CATALOG ###
 print("Checking in HSC catalog")
 
-objx = cat.loc[idx_tocheck]
+objx = info_df.loc[idx_tocheck]
 rax = objx['ra_x']
 decx = objx['dec_x']
 print("RA:", rax, "dec:", decx)
 
 print("Getting HSC archive")
-pdr2_wide = hsc.Hsc(dr='pdr2', rerun='pdr2_wide', config_file='../cred.dat')
+config_file = '../prepdata/hsc_credentials.dat'
+pdr2_wide = hsc.Hsc(dr='pdr2', rerun='pdr2_wide', config_file=config_file)
 
 filters = ['g','r','i']
 ang_size_h = 10*u.arcsec

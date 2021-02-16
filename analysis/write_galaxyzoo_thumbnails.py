@@ -9,27 +9,40 @@ import h5py
 import numpy as np
 from PIL import Image
 import pandas as pd
+import tarfile
 
 
 def main():
 
+    #tag = 'gri_lambda0.3_3sigdisc'
     tag = 'gri_lambda0.3_1.5sigdisc'
-    thumb_dir = f'../thumbnails/thumbnails_galaxyzoo_{tag}'
+    #tag = 'gri_lambda0.3_control'
+    #tag = 'gri_1k_lambda0.3'
+
+    base_dir = '/scratch/ksf293/anomalies'
+    tar_filename = f'../thumbnails/thumbnails_galaxyzoo_{tag}.tar.gz'
+    thumb_dir = f'{base_dir}/thumbnails/thumbnails_galaxyzoo_{tag}'
     print(f"Thumbnail directory: {thumb_dir}")
     if not os.path.isdir(thumb_dir):
         os.makedirs(thumb_dir)
 
     print(f"Loading and results with tag {tag}")
-    base_dir = '/scratch/ksf293/kavli/anomaly'
     results_fn = f'{base_dir}/results/results_{tag}.h5'
     res = h5py.File(results_fn, 'r')
 
-    write_thumbnails(res, thumb_dir)
+    #write_thumbnails(res, thumb_dir)
+    #tar_thumbnails(tar_filename, thumb_dir)
     write_info_file(res, tag)
 
     res.close()
     print("Done!")
 
+
+def tar_thumbnails(tar_filename, thumb_dir):
+    print("Writing tarball")
+    with tarfile.open(tar_filename, "w:gz") as tar:
+        tar.add(thumb_dir, arcname=os.path.basename(thumb_dir))
+    print("Tar'ed!")
 
 def write_thumbnails(res, thumb_dir):
     print("Writing thumbnails")
@@ -66,12 +79,13 @@ def write_info_file(res, tag):
     print("Reading in info file {}".format(info_fn))
     info_df = pd.read_csv(info_fn, usecols=['idx', 'object_id', 'ra_x', 'dec_x'], squeeze=True)
     info_df = info_df.set_index('idx')
-    #object_ids = [info_df['object_id'].loc[idx].astype(np.uint64) for idx in idxs]
 
     # Combine dfs
     combined_df = pd.merge(score_df, info_df, on='idx', how='left')
     combined_df.rename(columns=column_names,inplace=True)
     combined_df = combined_df[['object_id', 'ra', 'dec', 'disc_scores_sigma', 'disc_scores_raw']]
+    combined_df.index = combined_df.index.astype(np.uint32) #i'm not sure why this became a float but fixing
+    combined_df.sort_index(inplace=True)
     print(combined_df)
 
     save_fn = f'../thumbnails/info_galaxyzoo_{tag}.csv'
