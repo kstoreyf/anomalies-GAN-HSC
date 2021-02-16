@@ -18,6 +18,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+#import tensorflow.compat.v1 as tf
+#tf.disable_v2_behavior()
 import tensorflow_hub as hub
 
 import tflib as lib
@@ -38,7 +40,7 @@ NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 30
-ITERS = 5100#10000 # How many generator iterations to train for
+ITERS = 15100#10000 # How many generator iterations to train for
 SAMPLE_ITERS = 100 # Multiples at which to generate image sample
 SAVE_ITERS = 100 # Multiples at which to save the autoencoder state
 overwrite = True
@@ -47,16 +49,15 @@ LATENT_DIM = 32
 #tag = 'gri'
 #tag = 'gri_3signorm'
 #tag = 'gri_cosmos'
-imtag = 'gri_10k'
-tag = 'gri_10k_lambda0.3'
-results_dir = '/scratch/ksf293/kavli/anomaly/results' #may need to move stuff back to scratch from archive
-#results_dir = '/archive/k/ksf293/kavli/anomaly/results'
-results_fn = f'{results_dir}/results_{tag}.h5'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{imtag}.h5' # NOTE NEW FORMAT
+imtag = 'gri_lambda0.3_3sigdisc'
+tag = 'gri_lambda0.3_3sigdisc'
+base_dir = '/scratch/ksf293/anomalies'
+results_fn = f'{base_dir}/results/results_{tag}.h5'
+imarr_fn = f'{base_dir}/data/images_h5/images_{imtag}.h5'
 #savetag = '_latent32_lr1e-2'
 #savetag = f'_latent{LATENT_DIM}_real'
-mode = 'disc_features_real'
-#mode = 'residuals'
+#mode = 'disc_features_real'
+mode = 'residuals'
 #mode = "reals"
 if 'disc' in mode:
     NSIDE = 6
@@ -69,8 +70,8 @@ else:
 savetag = f'_latent{LATENT_DIM}_{mode}'
 #savetag = '_aereal'
 
-out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/autoencoder_{tag}{savetag}/'
-loss_fn = f'{out_dir}/loss.txt'
+out_dir = f'{base_dir}/training_output/autoencoder_training/autoencoder_{tag}{savetag}/'
+loss_fn = f'{out_dir}loss.txt'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
