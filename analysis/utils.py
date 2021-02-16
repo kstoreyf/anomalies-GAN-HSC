@@ -10,10 +10,7 @@ import h5py
 
 NBANDS = 3
 
-def luptonize(x):
-    rgb_q = 15
-    rgb_stretch = 0.5
-    rgb_min = 0
+def luptonize(x, rgb_q=15, rgb_stretch=0.5, rgb_min=0):
     if x.ndim==3:
         x = make_lupton_rgb(x[:,:,2], x[:,:,1], x[:,:,0],
                       Q=rgb_q, stretch=rgb_stretch, minimum=rgb_min)

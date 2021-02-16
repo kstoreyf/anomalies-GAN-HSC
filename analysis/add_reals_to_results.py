@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : luptonize_reals_rgb.py
+# * File Name : compute_residuals_rgb.py
 # * Creation Date : 2020-07-17
 # * Created By : kstoreyf
-# * Description : Luptonizes the real images and saves
-#                 them to the results object
+# * Description : Computes the image residuals from the
+#                 real & reconstructeds, for RGB images
 # ******************************************************
 
 import numpy as np
@@ -11,17 +11,17 @@ import h5py
 
 import utils
 
-NSIDE = 96
-NBANDS = 3
 
 def main():
    
     #tag = 'gri'
     #tag = 'gri_3signorm'
-    #tag = 'gri_100k'
+    #imtag = 'gri_lambda0.3_1.5sigdisc'
     #tag = 'gri_lambda0.3_1.5sigdisc'
-    imtag = 'gri_lambda0.3_control'
-    tag = 'gri_lambda0.3_control'   
+    #imtag = 'gri_lambda0.3_control'
+    #tag = 'gri_lambda0.3_control'
+    imtag = 'gri_100k'
+    tag = 'gri_100k_lambda0.3'
 
     imarr_fn = f'/scratch/ksf293/anomalies/data/images_h5/images_{imtag}.h5'
     results_dir = f'/scratch/ksf293/anomalies/results'
@@ -30,17 +30,18 @@ def main():
     print("Loading data & residuals")
     imarr = h5py.File(imarr_fn, "r")
     res = h5py.File(results_fn, "a")
-    reals = imarr['images']
+    reals = imarr['images'][:]
 
-    print("Luptonizing")
-    reals = np.array(reals)
-    reals = reals.reshape((-1,NSIDE,NSIDE,NBANDS))
+    NBANDS = 3
+    reals = reals.reshape((-1,96,96,NBANDS))
     reals = utils.luptonize(reals).astype('int')
+    imarr.close()
 
     print("Creating new dataset")
+    if 'reals' in res.keys():
+        del res['reals']
     res.create_dataset("reals", data=reals, dtype='uint8')
 
-    imarr.close()
     res.close() 
     print("Done")
 

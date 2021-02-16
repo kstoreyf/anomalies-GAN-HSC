@@ -25,10 +25,10 @@ def main():
     start = time.time()
 
     # WARNING! this requires the imtag_orig and restag_orig to have the same objects in the same order. which it usually will, but should check 
-    res_dir = '/scratch/ksf293/kavli/anomaly/results'
+    res_dir = '/scratch/ksf293/anomalies/results'
     res_fn_orig = f'{res_dir}/results_{restag_orig}.h5'
     res_fn_new = f'{res_dir}/results_{restag_new}.h5'
-    data_dir = '/scratch/ksf293/kavli/anomaly/data'
+    data_dir = '/scratch/ksf293/kavli/anomalies/data'
     imarr_fn_orig = f'{data_dir}/images_h5/images_{imtag_orig}.h5'
     imarr_fn_new = f'{data_dir}/images_h5/images_{imtag_new}.h5'
     

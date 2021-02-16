@@ -20,10 +20,9 @@ def main():
     #tag = 'gri_3signorm'
     #tag = 'gri_100k'
     #tag = 'gri_cosmos'
-    tag = 'gri_lambda0.3_1.5sigdisc'
-    base_dir = '/scratch/ksf293/kavli/anomaly'
-    #base_dir = '..'
-    #plot_dir = f'/home/ksf293/kavli/anomalies-GAN-HSC/plots/plots_2020-07-08'
+    #tag = 'gri_lambda0.3_3sigdisc'
+    tag = 'gri_1k_lambda0.3'
+    base_dir = '/scratch/ksf293/anomalies'
     make_plot = False
     plot_dir = f'../plots/plots_2020-01-10'
     savetag = ''
