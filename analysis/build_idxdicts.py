@@ -9,19 +9,18 @@ import h5py
 import numpy as np
 
 
-build_imdict = False
+build_imdict = True
 build_resdict = True
 #tag = 'gri_cosmos'
 #tag = 'gri_3sig'
-imtag = 'gri'
-tag = 'gri_lambda0.3'
-base_dir = '/scratch/ksf293/kavli/anomaly'
-#base_dir = '/archive/k/ksf293/kavli/anomaly'
+imtag = 'gri_lambda0.3_3sigdisc'
+tag = 'gri_lambda0.3_3sigdisc'
+base_dir = '/scratch/ksf293/anomalies'
 
 if build_imdict:
     print("Building image dict")
     imarr_fn = '{}/data/images_h5/images_{}.h5'.format(base_dir,  imtag)
-    imdict_fn = '../data/idxdicts_h5/idx2imloc_{}.npy'.format(imtag)
+    imdict_fn = '{}/data/idxdicts_h5/idx2imloc_{}.npy'.format(base_dir, imtag)
     imarr = h5py.File(imarr_fn, 'r')
     idx2imloc = {}
     for i in range(len(imarr['idxs'])):
@@ -33,7 +32,7 @@ if build_imdict:
 if build_resdict:
     print("Building results dict")
     results_fn = '{}/results/results_{}.h5'.format(base_dir, tag)
-    resdict_fn = '../data/idxdicts_h5/idx2resloc_{}.npy'.format(tag)
+    resdict_fn = '{}/data/idxdicts_h5/idx2resloc_{}.npy'.format(base_dir, tag)
     res = h5py.File(results_fn, 'r')
 
     idx2resloc = {}

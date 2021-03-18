@@ -18,6 +18,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import h5py
 
 import save_images as saver
@@ -187,7 +188,8 @@ def plot_dist(scores_all, save_fn, labels=None):
 
 
 def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None, 
-             subsize=2, tight=False, hspace=0.03, wspace=-0.15, **kwargs):
+             subsize=2, tight=False, hspace=0.03, wspace=-0.15, 
+             border_indices=None, border_color='cyan', **kwargs):
     assert len(ids)<=nrows*ncols, "bad rows/cols for number of ids!"
 
     imdict_fn = f'{base_dir}/data/idxdicts_h5/idx2imloc_{imtag}.npy'
@@ -237,14 +239,20 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
                 
         if count>=len(ids):
             break
-                
+    
+    if border_indices is not None:
+        bi, bj = border_indices
+        axarr[bi][bj].patch.set_edgecolor(border_color)
+        axarr[bi][bj].patch.set_linewidth('6')
+                    
     if saveto:
         plt.savefig(saveto, bbox_inches='tight')#, pad_inches=0)
 
 
 def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None,
               highlight_markers=None, cmap='plasma_r', boxes=None, box_colors=None,
-              figsize=(8,7), colorby=None, vmin=None, vmax=None, alpha=0.2, s=6):
+              figsize=(8,7), colorby=None, vmin=None, vmax=None, alpha=0.2, s=6,
+              xlim=None, ylim=None):
     e1, e2, cby, idxs = embedding
     if colorby is None:
         colorby = cby
@@ -271,16 +279,18 @@ def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None
             amin, amax, bmin, bmax = boxes[i]
             width = amax - amin
             height = bmax - bmin
-            rect = matplotlib.patches.Rectangle((amin,bmin),width,height,linewidth=2,
+            rect = matplotlib.patches.Rectangle((amin,bmin),width,height,linewidth=3,
                                                 edgecolor=box_colors[i],facecolor='none')
             ax = plt.gca()
             ax.add_patch(rect)
 
     plt.xlabel('umap A')
     plt.ylabel('umap B')
+    plt.xlim(xlim)
+    plt.ylim(ylim)
 
     cbar = plt.colorbar(extend='max')
-    cbar.set_label(r'$s_\mathrm{anom}$, anomaly score', rotation=270, labelpad=18)
+    cbar.set_label(r'$s_\mathrm{disc}$, discriminator score', rotation=270, labelpad=18)
     cbar.set_alpha(1)
     cbar.draw_all()
 
@@ -300,7 +310,8 @@ def get_residual(im, recon):
     return resid
 
 
-def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=None):
+def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=None,
+                score_name='disc_scores_sigma', score_label='$s_\mathrm{{disc}}$'):
     nims = len(ids)
     if resdicttag is None:
         resdicttag = restag
@@ -325,10 +336,10 @@ def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=N
         
         rloc = idx2resloc[idx]
         recon = res['reconstructed'][rloc]
-        score = float(res['disc_scores_sigma'][rloc])
+        score = float(res[score_name][rloc])
         obj_id = int(res['object_ids'][rloc])
         if 'residual' in res.keys():
-            reside = res['residual'][rloc]
+            resid = res['residual'][rloc]
         else:
             resid = get_residual(im, recon)
         
@@ -336,7 +347,7 @@ def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=N
         ax1 = axarr[1][i]
         ax2 = axarr[2][i]
         title = r'''ID: {}
-$s_\mathrm{{disc}}$ = {:.2f}$\sigma$'''.format(obj_id, score)
+{} = {:.2f}$\sigma$'''.format(obj_id, score_label, score)
         ax0.set_title(title, fontsize=8)
         ax0.imshow(im)
         ax1.imshow(recon)
@@ -375,9 +386,9 @@ def plot_anomaly_dist(gens, discs, sanoms, title=None, saveto=None):
     fig.suptitle(title)
 
     ax0 = axarr[0]
-    b = ax0.hist(gens, bins=bins, alpha=1, color='blue', label='generator \nscore $(s_\mathrm{gen})$', histtype='step')
-    b = ax0.hist(discs, bins=bins, alpha=1, color='red', label='discriminator \nscore $(s_\mathrm{disc})$', histtype='step')
-    b = ax0.hist(sanoms, bins=bins, alpha=1, color='purple', label='total \nscore $(s_\mathrm{anom})$', histtype='step', lw=2)
+    b = ax0.hist(gens, bins=bins, alpha=1, color='blue', ls=':', label='generator \nscore $(s_\mathrm{gen})$', histtype='step', lw=1.5)
+    b = ax0.hist(discs, bins=bins, alpha=1, color='red', ls='--', label='discriminator \nscore $(s_\mathrm{disc})$', histtype='step', lw=1.5)
+    b = ax0.hist(sanoms, bins=bins, alpha=1, color='purple', label='total \nscore $(s_\mathrm{anom})$', histtype='step', lw=1.5)
 
     mean = np.mean(sanoms)
     std = np.std(sanoms)
@@ -403,22 +414,23 @@ def plot_anomaly_dist(gens, discs, sanoms, title=None, saveto=None):
     ax1 = axarr[1]
     scat = ax1.scatter(gens, discs, s=1, c=sanoms, alpha=0.2, cmap='plasma_r', vmin=-2, vmax=5)
     cbar = fig.colorbar(scat, extend='max', ax=ax1)
-    cbar.set_label(r'$s_\mathrm{anom}$', rotation=270, labelpad=8)
+    cbar.set_label(r'$s_\mathrm{anom}$ ($\sigma$)', rotation=270, labelpad=8)
     cbar.set_alpha(1)
     cbar.draw_all()
-    
-    #xx = np.linspace(0,maxmax,100)
-    #ax1.plot(xx, xx, color='k', lw=0.5)
+   
+    smin, smax = -5, 15 
+    xx = np.linspace(smin,smax,2)
+    ax1.plot(xx, xx, color='k', ls='--', lw=0.5)
     #lambda_weight = 0.5
     #line_3sig = thresh_3sig/lambda_weight - xx
     #plt.plot(xx, line_3sig, lw=0.4, color=lcolor, ls='--')
 
-    ax1.set_xlabel(r"$s_\mathrm{gen}$, generator score")
-    ax1.set_ylabel(r"$s_\mathrm{disc}$, discriminator score")
+    ax1.set_xlabel(r"$s_\mathrm{gen}$, generator score ($\sigma$)")
+    ax1.set_ylabel(r"$s_\mathrm{disc}$, discriminator score ($\sigma$)")
 
-    ax1.set_xlim(-5, 15)
-    ax1.set_ylim(-5, 15)	
-    ticks = np.arange(-5, 20, 5)
+    ax1.set_xlim(smin,smax)
+    ax1.set_ylim(smin, smax)	
+    ticks = np.arange(smin, smax+5, 5)
     ax1.set_xticks(ticks)
     ax1.set_yticks(ticks)
     ax1.set_aspect('equal', adjustable='box')
@@ -426,6 +438,59 @@ def plot_anomaly_dist(gens, discs, sanoms, title=None, saveto=None):
     plt.show()    
     if saveto:
         plt.savefig(saveto, bbox_inches='tight')
+
+
+def plot_cross_hexbin(results_fn, cat_fn, x_name, cmap='coolwarm', saveto=None):
+    print("Loading data")
+    res = h5py.File(results_fn, 'r')
+    scores = res['disc_scores_sigma']
+    idxs = [int(idx) for idx in res['idxs'][:]]
+
+    print("Loading catalog")
+    x_col_name = {'extendedness': 'i_cmodel_ellipse_radius',
+                  'blendedness': 'i_blendedness_abs_flux'}
+    cols = [x_col_name[x_name], 'idx']
+    cat = pd.read_csv(cat_fn, usecols=cols, squeeze=True)
+
+    print("Getting blend & extend")
+    x_vals = [cat[x_col_name[x_name]].iloc[idx] for idx in idxs]
+    scores = [s if s<=5 else 5 for s in scores] #pile extreme scores into edge bins
+    scores = [s if s>=-2 else -2 for s in scores]
+
+    # if need to save intermediate result
+    #result = np.array([extend, blend, scores, idxs])
+    #np.save(save_fn, result)
+
+    print("Plotting")
+    plt.figure(figsize=(10,8))
+    #plt.scatter(extend, scores, marker='.', c=blend, cmap=cmap, s=16, alpha=0.3)
+    #plt.contourf(extend, scores, blend, cmap=cmap)
+    
+    plt.ylabel(r'$s_\mathrm{disc}$, discriminator score')
+    
+    if x_name=='extendedness':
+        #x_vals = [np.log10(x) for x in x_vals]
+        #print(min(x_vals), max(x_vals))
+        xscale = 'log'
+        plt.xlabel(r'$R_\mathrm{eff}$, effective radius (arcsec)')
+    if x_name=='blendedness':
+        x_vals = [x if x>=0 else 0 for x in x_vals]
+        xscale = 'linear'
+        thresh = 10**(-0.375)
+        plt.axvline(thresh, color='purple', ls='--', lw=1.5)
+        plt.xlabel('blendedness')
+    plt.hexbin(x_vals, scores, gridsize=30, cmap='Blues', bins='log', xscale=xscale)
+
+    cbar = plt.colorbar()
+    cbar.set_label('number in bin', rotation=270, labelpad=18)
+    
+    lcolor='k'
+    plt.axhline(3, lw=0.75, color=lcolor)
+   
+    res.close()
+    
+    if saveto:
+        plt.savefig(saveto, bbox_inches='tight', pad_inches=0.1)
 
 
 if __name__=='__main__':

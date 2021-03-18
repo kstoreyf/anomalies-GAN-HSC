@@ -13,7 +13,8 @@ import h5py
 
 def main():
    
-    restag = 'gri_10k_lambda0.3'
+    #restag = 'gri_10k_lambda0.3'
+    restag = 'gri_100k_lambda0.3'
     #restag = 'gri'
 
     results_dir = f'/scratch/ksf293/anomalies/results'

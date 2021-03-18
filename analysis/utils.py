@@ -90,3 +90,15 @@ def get_autoencoded(auto_fn, n_anoms=0, sigma=0):
         latents = latents.tolist()
     return latents, idxs, scores
 
+
+def get_idxs_in_box(embedding, umap_range, n_ims, seed=42):
+
+    amin, amax, bmin, bmax = umap_range
+    e1, e2, colorby, idxs = embedding
+    idxs_in_box = [idxs[i] for i in range(len(e1)) if amin<e1[i]<amax and bmin<e2[i]<bmax]
+    print(len(idxs_in_box))
+    np.random.seed(seed=seed)
+    idxs_subsample = np.random.choice(idxs_in_box, size=n_ims, replace=False)
+
+    return idxs_subsample
+
