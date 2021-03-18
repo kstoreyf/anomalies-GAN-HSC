@@ -31,24 +31,25 @@ decode_latent = False
 startcount = 0
 
 #tag = 'gri_100k'
-#tag = 'gri_cosmos'
-tag = 'gri_3signorm'
+tag = 'gri_100k_lambda0.3'
+#tag = 'gri_lambda0.3_3sigdisc'
 #aenum = 29500
-aenum = 16000
-mode = 'reals'
+aenum = 50000
+mode = 'residuals'
 #mode = 'reals'
-#aetag = '_latent32_real'
-aetag = f'_latent64_{mode}'
+#aetag = f'_latent32_{mode}'
+aetag = f'_latent32_{mode}'
 #aetag = '_aetest'
 savetag = f'_model{aenum}{aetag}'
-results_dir = '/scratch/ksf293/kavli/anomaly/results'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
+base_dir = '/scratch/ksf293/anomalies'
+results_dir = f'{base_dir}/results'
+imarr_fn = f'{base_dir}/data/images_h5/images_{tag}.h5'
 save_fn = f'{results_dir}/autoencodes/autoencoded_{tag}{savetag}.npy'
 if decode_latent:
     save_decode_fn = f'{results_dir}/decodes/decoded_{tag}{savetag}.npy'
 results_fn = f'{results_dir}/results_{tag}.h5'
 
-ae_fn = f'/scratch/ksf293/kavli/anomaly/training_output/autoencoder_{tag}{aetag}/model-autoencoder-{aenum}'
+ae_fn = f'{base_dir}/training_output/autoencoder_training/autoencoder_{tag}{aetag}/model-autoencoder-{aenum}'
 AutoEncoder = hub.Module(ae_fn)
 
 #get data
@@ -63,7 +64,7 @@ print("Loading data")
 #data = reals
 data = lib.datautils.load(results_fn, dataset=mode)
 idxs = lib.datautils.load(results_fn, dataset='idxs')
-scores = lib.datautils.load(results_fn, dataset='anomaly_scores_norm')
+scores = lib.datautils.load(results_fn, dataset='disc_scores_sigma')
 y = range(len(data))
 data_gen = lib.datautils.DataGenerator(data, y=y, batch_size=BATCH_SIZE, shuffle=False, once=True,
                                         luptonize=False, normalize=False, smooth=False)
