@@ -251,8 +251,8 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
 
 def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None,
               highlight_markers=None, cmap='plasma_r', boxes=None, box_colors=None,
-              figsize=(8,7), colorby=None, vmin=None, vmax=None, alpha=0.2, s=6,
-              xlim=None, ylim=None):
+              box_labels=None, figsize=(8,7), colorby=None, vmin=None, vmax=None, 
+              alpha=0.2, s=6, xlim=None, ylim=None):
     e1, e2, cby, idxs = embedding
     if colorby is None:
         colorby = cby
@@ -283,6 +283,7 @@ def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None
                                                 edgecolor=box_colors[i],facecolor='none')
             ax = plt.gca()
             ax.add_patch(rect)
+            ax.text(amin-0.8, bmin, box_labels[i], fontsize=18)
 
     plt.xlabel('umap A')
     plt.ylabel('umap B')
@@ -298,6 +299,8 @@ def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None
 
     if saveto:
         plt.savefig(saveto, bbox_inches='tight')
+
+    return plt.gca()
 
 
 NSIDE = 96
