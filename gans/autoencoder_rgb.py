@@ -13,9 +13,6 @@ sys.path.append(os.getcwd())
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 import time
 
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 #import tensorflow.compat.v1 as tf
@@ -40,24 +37,25 @@ NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 30
-ITERS = 50100#10000 # How many generator iterations to train for
+ITERS = 30500#10000 # How many generator iterations to train for
 SAMPLE_ITERS = 500 # Multiples at which to generate image sample
 SAVE_ITERS = 500 # Multiples at which to save the autoencoder state
 overwrite = True
-LATENT_DIM = 32
+LATENT_DIM = 64
 
-#tag = 'gri'
-imtag = 'gri_100k'
-tag = 'gri_100k_lambda0.3'
+#imtag = 'gri'
+#tag = 'gri_lambda0.3'
+#imtag = 'gri_100k'
+#tag = 'gri_100k_lambda0.3'
 #tag = 'gri_cosmos'
-#imtag = 'gri_lambda0.3_3sigdisc'
-#tag = 'gri_lambda0.3_3sigdisc'
+imtag = 'gri_lambda0.3_3sigd'
+tag = 'gri_lambda0.3_3sigd'
 base_dir = '/scratch/ksf293/anomalies'
 results_fn = f'{base_dir}/results/results_{tag}.h5'
 imarr_fn = f'{base_dir}/data/images_h5/images_{imtag}.h5'
 #mode = 'disc_features_real'
-mode = 'residuals'
-#mode = "reals"
+#mode = 'residuals'
+mode = "reals"
 if 'disc' in mode:
     NSIDE = 6
     NBANDS = 512

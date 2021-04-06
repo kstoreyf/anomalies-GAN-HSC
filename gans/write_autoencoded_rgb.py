@@ -30,15 +30,15 @@ BATCH_SIZE = 1000
 decode_latent = False
 startcount = 0
 
-#tag = 'gri_100k'
-tag = 'gri_100k_lambda0.3'
-#tag = 'gri_lambda0.3_3sigdisc'
+#tag = 'gri_lambda0.3'
+#tag = 'gri_100k_lambda0.3'
+tag = 'gri_lambda0.3_3sigd'
 #aenum = 29500
-aenum = 50000
-mode = 'residuals'
-#mode = 'reals'
+aenum = 30000
+#mode = 'residuals'
+mode = 'reals'
 #aetag = f'_latent32_{mode}'
-aetag = f'_latent32_{mode}'
+aetag = f'_latent64_{mode}_long'
 #aetag = '_aetest'
 savetag = f'_model{aenum}{aetag}'
 base_dir = '/scratch/ksf293/anomalies'
@@ -54,14 +54,7 @@ AutoEncoder = hub.Module(ae_fn)
 
 #get data
 print("Loading data")
-#reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(
-#                                                    results_fn, imarr_fn)
-#residuals, reals, recons = utils.get_residuals(reals, recons) # this luptonizes the reals so we don't have to
-#print(residuals.shape)
-
-#data = residuals
 #print("WRITING AUTENCODES FOR REALS (NOT RESIDUALS)")
-#data = reals
 data = lib.datautils.load(results_fn, dataset=mode)
 idxs = lib.datautils.load(results_fn, dataset='idxs')
 scores = lib.datautils.load(results_fn, dataset='disc_scores_sigma')
@@ -79,8 +72,8 @@ with tf.Session() as sess:
     while not data_gen.is_done:
         print(f'Batch {count}')
         _data, _y = data_gen.next()
-        _idx = idxs[_y]
-        _scores = scores[_y]
+        _idx = idxs[list(_y)]
+        _scores = scores[list(_y)]
 
         s0 = time.time()
         _latent_tensor = AutoEncoder(_data, signature='latent')

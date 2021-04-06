@@ -6,7 +6,7 @@ import numpy as np
 import scipy.misc
 #from scipy.misc import imsave
 from imageio import imwrite
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from astropy.visualization import make_lupton_rgb
 
 np.set_printoptions(threshold=sys.maxsize)
