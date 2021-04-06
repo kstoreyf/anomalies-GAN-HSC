@@ -13,8 +13,8 @@ build_imdict = True
 build_resdict = True
 #tag = 'gri_cosmos'
 #tag = 'gri_3sig'
-imtag = 'gri_lambda0.3_3sigdisc'
-tag = 'gri_lambda0.3_3sigdisc'
+imtag = 'gri_lambda0.3_3sigd'
+tag = 'gri_lambda0.3_3sigd'
 base_dir = '/scratch/ksf293/anomalies'
 
 if build_imdict:

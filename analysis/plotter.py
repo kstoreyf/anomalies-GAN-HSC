@@ -188,9 +188,20 @@ def plot_dist(scores_all, save_fn, labels=None):
 
 
 def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None, 
-             subsize=2, tight=False, hspace=0.03, wspace=-0.15, 
-             border_indices=None, border_color='cyan', **kwargs):
+             subsize=2, tight=False, hspace=None, wspace=None, 
+             border_indices=None, border_color='cyan', restag=None,
+             resdicttag=None, score_name=None, score_label=None,
+             **kwargs):
     assert len(ids)<=nrows*ncols, "bad rows/cols for number of ids!"
+
+    if resdicttag is None:
+        resdicttag = restag
+
+    if score_name is not None:
+        resdict_fn = f'{base_dir}/data/idxdicts_h5/idx2resloc_{resdicttag}.npy' # THIS MIGHT NEED TO BE RESTAG
+        idx2resloc = np.load(resdict_fn, allow_pickle=True).item()
+        results_fn = f'{base_dir}/results/results_{restag}.h5'
+        res = h5py.File(results_fn, 'r')
 
     imdict_fn = f'{base_dir}/data/idxdicts_h5/idx2imloc_{imtag}.npy'
     idx2imloc = np.load(imdict_fn, allow_pickle=True).item()
@@ -198,10 +209,14 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
     imarr = h5py.File(imarr_fn, 'r')
  
     fig, axarr = plt.subplots(nrows,ncols,figsize=(ncols*subsize,nrows*subsize))
-    if tight:
-        plt.subplots_adjust(hspace=hspace, wspace=wspace)
-    else:
-        plt.subplots_adjust(hspace=0.2, wspace=0.05)
+    if hspace is None and tight:
+        hspace = 0.03
+        wspace = -0.15
+    elif hspace is None and score_name == None:
+        hspace=0.2
+        wspace=0.05
+    print(hspace,wspace)
+    plt.subplots_adjust(hspace=hspace, wspace=wspace)
     plt.rc('text', usetex=True)
     
     count = 0
@@ -211,6 +226,11 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
             loc = idx2imloc[idx]
             im = imarr['images'][loc]
             obj_id = int(imarr['object_ids'][loc])
+            if score_name is not None:
+                rloc = idx2resloc[idx]
+                score = float(res[score_name][rloc])
+                sdisc = float(res['disc_scores_sigma'][rloc])
+                sgen = float(res['gen_scores_sigma'][rloc])
             if nrows==1 and ncols==1:
                 ax = axarr
             elif nrows==1:
@@ -220,8 +240,11 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
             else:
                 ax = axarr[i][j]
                 
-            if not tight:
-                title = f"ID: {obj_id}"
+            if score_name is not None and not tight:
+                #title = f"ID: {obj_id}"
+                title = r'''ID: {}
+{} = {:.2f}$\sigma$
+{:.2f}, {:.2f}'''.format(obj_id, score_label, score, sdisc, sgen)
                 ax.set_title(title, fontsize=8)
             
             ax.imshow(utils.luptonize(im, **kwargs))
@@ -252,7 +275,7 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
 def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None,
               highlight_markers=None, cmap='plasma_r', boxes=None, box_colors=None,
               box_labels=None, figsize=(8,7), colorby=None, vmin=None, vmax=None, 
-              alpha=0.2, s=6, xlim=None, ylim=None):
+              alpha=0.2, s=6, xlim=None, ylim=None, show_axes=False):
     e1, e2, cby, idxs = embedding
     if colorby is None:
         colorby = cby
@@ -285,8 +308,15 @@ def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None
             ax.add_patch(rect)
             ax.text(amin-0.8, bmin, box_labels[i], fontsize=18)
 
-    plt.xlabel('umap A')
-    plt.ylabel('umap B')
+    if show_axes:
+        plt.xlabel('umap A')
+        plt.ylabel('umap B')
+    else:
+        ax = plt.gca()
+        ax.set_xticks([])
+        ax.set_yticks([])
+        #ax.axis("off")
+
     plt.xlim(xlim)
     plt.ylim(ylim)
 
@@ -374,7 +404,7 @@ def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=N
         plt.savefig(saveto, bbox_inches='tight', edgecolor=border_color)#, pad_inches=0)
 
 
-def plot_anomaly_dist(gens, discs, sanoms, title=None, saveto=None):
+def plot_anomaly_dist(sanoms, gens, discs, title=None, saveto=None):
     
     print(min(gens), max(gens), np.mean(gens), np.std(gens))
     print(min(discs), max(discs), np.mean(discs), np.std(discs))
@@ -389,9 +419,9 @@ def plot_anomaly_dist(gens, discs, sanoms, title=None, saveto=None):
     fig.suptitle(title)
 
     ax0 = axarr[0]
+    b = ax0.hist(sanoms, bins=bins, alpha=1, color='purple', label='total \nscore $(s_\mathrm{anom})$', histtype='step', lw=1.5)
     b = ax0.hist(gens, bins=bins, alpha=1, color='blue', ls=':', label='generator \nscore $(s_\mathrm{gen})$', histtype='step', lw=1.5)
     b = ax0.hist(discs, bins=bins, alpha=1, color='red', ls='--', label='discriminator \nscore $(s_\mathrm{disc})$', histtype='step', lw=1.5)
-    b = ax0.hist(sanoms, bins=bins, alpha=1, color='purple', label='total \nscore $(s_\mathrm{anom})$', histtype='step', lw=1.5)
 
     mean = np.mean(sanoms)
     std = np.std(sanoms)

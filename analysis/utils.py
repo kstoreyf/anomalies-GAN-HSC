@@ -20,7 +20,7 @@ def luptonize(x, rgb_q=15, rgb_stretch=0.5, rgb_min=0):
                       for xi in x])
     else:
         raise ValueError(f"Wrong number of dimensions! Gave {x.ndim}, need 3 or 4")
-    return x
+    return x.astype(int)
 
 def get_results(result_fn, imarr_fn, n_anoms=0, sigma=0):
     print("Loading results")    

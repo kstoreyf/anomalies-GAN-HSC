@@ -18,9 +18,12 @@ def main():
     #imtag_new = 'gri_3sigdisc'
     #restag_orig = 'gri'
     #restag_new = 'gri_3sigdisc'
-    imtag_new = 'gri_lambda0.3_1.5sigdisc'
+    #imtag_new = 'gri_lambda0.3_1.5sigdisc'
+    #restag_orig = 'gri_lambda0.3'
+    #restag_new = 'gri_lambda0.3_1.5sigdisc' 
+    imtag_new = 'gri_lambda0.3_3sigd'
     restag_orig = 'gri_lambda0.3'
-    restag_new = 'gri_lambda0.3_1.5sigdisc' 
+    restag_new = 'gri_lambda0.3_3sigd'
 
     start = time.time()
 
@@ -28,7 +31,7 @@ def main():
     res_dir = '/scratch/ksf293/anomalies/results'
     res_fn_orig = f'{res_dir}/results_{restag_orig}.h5'
     res_fn_new = f'{res_dir}/results_{restag_new}.h5'
-    data_dir = '/scratch/ksf293/kavli/anomalies/data'
+    data_dir = '/scratch/ksf293/anomalies/data'
     imarr_fn_orig = f'{data_dir}/images_h5/images_{imtag_orig}.h5'
     imarr_fn_new = f'{data_dir}/images_h5/images_{imtag_new}.h5'
     
@@ -40,8 +43,10 @@ def main():
     res_orig.close()
 
     # choose objects with high disc score AND low gen score
-    thresh = 1.5 #sigma
-    locs_new = np.where((disc_scores_sigma>gen_scores_sigma) & (disc_scores_sigma>thresh))[0]
+    #thresh = 1.5 #sigma
+    #locs_new = np.where((disc_scores_sigma>gen_scores_sigma) & (disc_scores_sigma>thresh))[0]
+    thresh = 3 #sigma
+    locs_new = np.where((disc_scores_sigma>thresh))[0]
 
     subsample_file(imarr_fn_orig, imarr_fn_new, locs_new)
     subsample_file(res_fn_orig, res_fn_new, locs_new)

@@ -20,8 +20,8 @@ def main():
     #tag = 'gri_3signorm'
     #tag = 'gri_100k'
     #tag = 'gri_lambda0.3_1.5sigdisc'
-    imtag = 'gri_lambda0.3_control'
-    tag = 'gri_lambda0.3_control'   
+    imtag = 'gri_lambda0.3_3sigd'
+    tag = 'gri_lambda0.3_3sigd'   
 
     imarr_fn = f'/scratch/ksf293/anomalies/data/images_h5/images_{imtag}.h5'
     results_dir = f'/scratch/ksf293/anomalies/results'

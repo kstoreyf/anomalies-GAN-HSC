@@ -20,8 +20,8 @@ def main():
     #tag = 'gri_3signorm'
     #tag = 'gri_100k'
     #tag = 'gri_cosmos'
-    #tag = 'gri_lambda0.3_3sigdisc'
-    tag = 'gri_100k_lambda0.3'
+    tag = 'gri_lambda0.3_3sigd'
+    #tag = 'gri_100k_lambda0.3'
     base_dir = '/scratch/ksf293/anomalies'
     make_plot = False
     plot_dir = f'../plots/plots_2020-01-10'
@@ -32,8 +32,8 @@ def main():
     #mode = 'residuals'
     mode = 'auto'
 
-    aenum = 50000
-    aetag = '_latent64_residuals'
+    aenum = 30000
+    aetag = '_latent64_reals_long'
     autotag = f'_model{aenum}{aetag}'
     
     results_dir = f'{base_dir}/results'
