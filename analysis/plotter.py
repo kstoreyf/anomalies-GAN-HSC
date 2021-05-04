@@ -186,6 +186,40 @@ def plot_dist(scores_all, save_fn, labels=None):
     plt.xlim(0,4000)
     plt.savefig(save_fn)
 
+def plot_ims_tight(ids, nrows, ncols, saveto=None):
+    NSIDE = 96
+    NBANDS = 3
+    imgrid = np.empty((nrows*NSIDE, ncols*NSIDE, NBANDS))
+
+    imdict_fn = f'{base_dir}/data/idxdicts_h5/idx2imloc_gri.npy'
+    idx2imloc = np.load(imdict_fn, allow_pickle=True).item()
+    imarr_fn = f'{base_dir}/data/images_h5/images_gri.h5'
+    imarr = h5py.File(imarr_fn, 'r')
+
+    dpi = 96
+    plt.figure(figsize=(NSIDE*ncols/dpi, NSIDE*nrows/dpi), dpi=dpi)
+    #fig = plt.figure()
+    #fig.set_size_inches(NSIDE*ncols/dpi, NSIDE*nrows/dpi)
+    ax = plt.gca()
+    count = 0
+    for i in range(nrows):
+        for j in range(ncols):
+            idx = ids[count]
+            loc = idx2imloc[idx]
+            im = imarr['images'][loc]
+            im = utils.luptonize(im)
+            
+            imgrid[i*NSIDE:(i+1)*NSIDE, j*NSIDE:(j+1)*NSIDE, :] = im
+            count += 1
+    imgrid = imgrid.astype('int32')
+    ax.imshow(imgrid)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.axis("off")
+    if saveto:
+        #plt.savefig(saveto, bbox_inches='tight', dpi=dpi*1.27)
+        plt.savefig(saveto, bbox_inches='tight', dpi=dpi)
+        #plt.savefig(saveto, dpi=dpi)
 
 def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None, 
              subsize=2, tight=False, hspace=None, wspace=None, 
@@ -295,7 +329,7 @@ def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None
             argidxs = [np.where(idxs==hi)[0][0] for hi in highlight_ids]
             plt.scatter(e1[argidxs], e2[argidxs], marker=highlight_markers[i], c=colorby[argidxs],
                             edgecolor=highlight_colors[i], lw=2,
-                            cmap=cmap, s=270, vmin=vmin, vmax=vmax)
+                            cmap=cmap, s=60, vmin=vmin, vmax=vmax)
 
     if boxes is not None:
         for i, box in enumerate(boxes):
