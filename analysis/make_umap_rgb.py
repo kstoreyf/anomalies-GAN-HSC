@@ -29,8 +29,8 @@ def main():
 
     #mode = 'disc_features_resid'
     #mode = 'reals'
-    #mode = 'residuals'
-    mode = 'auto'
+    mode = 'residuals'
+    #mode = 'auto'
 
     aenum = 30000
     aetag = '_latent64_reals_long'
