@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : compute_residuals_rgb.py
+# * File Name : make_control_sample.py
 # * Creation Date : 2020-07-17
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Generate control sample for galaxy
+#                 zoo
 # ******************************************************
 
 import numpy as np

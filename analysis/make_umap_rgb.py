@@ -1,5 +1,5 @@
 # **************************************************
-# * File Name : make_umap.py
+# * File Name : make_umap_rgb.py
 # * Creation Date : 2019-08-02
 # * Created By : kstoreyf
 # * Description : Generates a UMAP of the given data.
@@ -26,11 +26,8 @@ def main():
     make_plot = False
     plot_dir = f'../plots/plots_2020-01-10'
     savetag = ''
-
-    #mode = 'disc_features_resid'
-    #mode = 'reals'
-    mode = 'residuals'
-    #mode = 'auto'
+    
+    mode = 'residuals' # modes: ['reals', 'residuals', 'auto', 'disc_features_resid']
 
     aenum = 30000
     aetag = '_latent64_reals_long'
@@ -43,21 +40,14 @@ def main():
 
     imarr_fn = f'{base_dir}/data/images_h5/images_{tag}.h5'
 
-    # dataset choices
-    n_anoms = 0
-    sigma = 0
     # umap params
     n_neighbors = 5
     min_dist = 0.1
 
-    if sigma>0:
-        savetag += f'_{sigma}sigma'
-    if n_anoms:
-        savetag += '_anoms'
     if mode=='auto':
         savetag += autotag
-    if n_neighbors and min_dist:
-        savetag += f'_nn{n_neighbors}md{min_dist}'
+
+    savetag += f'_nn{n_neighbors}md{min_dist}'
     
     save_fn = f'{base_dir}/results/embeddings/embedding_umap_{mode}_{tag}{savetag}.npy'
     print(save_fn)
@@ -70,15 +60,6 @@ def main():
         values = res[mode][:]
         idxs = res['idxs'][:]
         scores = res['disc_scores_sigma'][:]
-
-    #elif mode=='reals' or mode=='residuals':
-    #    reals, recons, gen_scores, disc_scores, scores, idxs, object_ids = utils.get_results(results_fn, imarr_fn, n_anoms=n_anoms, sigma=sigma)
-    #
-    #if mode=='reals':
-    #    values = reals    
-    #if mode=='residuals':
-    #    residuals = utils.get_residuals(reals, recons)
-    #    values = residuals
    
     print(f"UMAP-ping {len(values)} values") 
     result = embed(values, idxs, scores, save_fn, n_neighbors=n_neighbors, min_dist=min_dist)
@@ -92,7 +73,6 @@ def embed(values, idxs, colorby, save_fn, n_neighbors=5, min_dist=0.05):
     values = values.reshape((values.shape[0], -1))
     print(values.shape)
     print("Embedding")
-    #values = np.array(values).flatten() 
     reducer = umap.UMAP(n_neighbors=n_neighbors, min_dist=min_dist)
     embedding = reducer.fit_transform(values)
 
@@ -112,7 +92,6 @@ def plot_umap(result, plot_fn):
     
     cbar = plt.colorbar(extend='max')
     cbar.set_label('anomaly score', rotation=270, labelpad=10)
-    #plt.clim(0,4000)
     plt.gca().set_aspect('equal', 'datalim')
     plt.savefig(plot_fn)
     

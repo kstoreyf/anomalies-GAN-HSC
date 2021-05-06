@@ -1,8 +1,9 @@
 # **************************************************
-# * File Name : write_galaxyzoo_thumbnails.py
+# * File Name : write_anomaly_catalog.py
 # * Creation Date : 2021-01-20
 # * Created By : kstoreyf
-# * Description :
+# * Description : Write clean catalog for results 
+#                 of GAN anomaly detection
 # **************************************************
 import os
 import h5py

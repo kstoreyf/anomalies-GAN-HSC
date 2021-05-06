@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : compute_iresiduals_rgb.py
-# * Creation Date : 2020-07-17
+# * File Name : check_fix_object_ids_formatting
+# * Creation Date : 
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Check and fix the object IDs and their 
+#                 formatting associated with images
 # ******************************************************
 
 import numpy as np

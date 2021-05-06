@@ -2,7 +2,8 @@
 # * File Name : utils.py
 # * Creation Date : 2019-08-14
 # * Created By : kstoreyf
-# * Description :
+# * Description : Utility routines for GAN anomaly
+#                 analysis
 # **************************************************
 import numpy as np
 from astropy.visualization import make_lupton_rgb

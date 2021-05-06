@@ -1,5 +1,5 @@
 # ******************************************************
-# * File Name : luptonize_reals_rgb.py
+# * File Name : luptonize_images_rgb.py
 # * Creation Date : 2020-07-17
 # * Created By : kstoreyf
 # * Description : Luptonizes the real images and saves

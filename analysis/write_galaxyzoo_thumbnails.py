@@ -2,7 +2,8 @@
 # * File Name : write_galaxyzoo_thumbnails.py
 # * Creation Date : 2021-01-20
 # * Created By : kstoreyf
-# * Description :
+# * Description : Write catalog of images used for 
+#                 galaxy zoo, and thumbnails
 # **************************************************
 import os
 import h5py

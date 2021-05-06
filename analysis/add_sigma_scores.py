@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : compute_residuals_rgb.py
-# * Creation Date : 2020-07-17
+# * File Name : add_sigma_scores.py
+# * Creation Date : 
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Add the normalized scores (sigma,  
+#                 standard deviation) to the datasets
 # ******************************************************
 
 import numpy as np

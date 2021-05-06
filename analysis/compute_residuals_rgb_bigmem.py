@@ -4,6 +4,7 @@
 # * Created By : kstoreyf
 # * Description : Computes the image residuals from the
 #                 real & reconstructeds, for RGB images
+#                 (attempt at fixing mem limit)
 # ******************************************************
 
 import numpy as np

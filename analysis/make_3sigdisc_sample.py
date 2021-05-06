@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : compute_residuals_rgb.py
+# * File Name : make_3sigd_sample.py
 # * Creation Date : 2020-07-17
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Generate the high-anomaly sample used
+#                 to perform further characterization
 # ******************************************************
 
 import numpy as np
@@ -15,12 +15,6 @@ import time
 def main():
   
     imtag_orig = 'gri'
-    #imtag_new = 'gri_3sigdisc'
-    #restag_orig = 'gri'
-    #restag_new = 'gri_3sigdisc'
-    #imtag_new = 'gri_lambda0.3_1.5sigdisc'
-    #restag_orig = 'gri_lambda0.3'
-    #restag_new = 'gri_lambda0.3_1.5sigdisc' 
     imtag_new = 'gri_lambda0.3_3sigd'
     restag_orig = 'gri_lambda0.3'
     restag_new = 'gri_lambda0.3_3sigd'
@@ -44,7 +38,6 @@ def main():
 
     # choose objects with high disc score AND low gen score
     #thresh = 1.5 #sigma
-    #locs_new = np.where((disc_scores_sigma>gen_scores_sigma) & (disc_scores_sigma>thresh))[0]
     thresh = 3 #sigma
     locs_new = np.where((disc_scores_sigma>thresh))[0]
 

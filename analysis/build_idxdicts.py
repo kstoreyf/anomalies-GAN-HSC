@@ -2,7 +2,9 @@
 # * File Name : build_idxdicts.py
 # * Creation Date : 2020-09-20
 # * Created By : kstoreyf
-# * Description :
+# * Description : Build lookup dictionaries to go 
+#                 from idx labels to locations in
+#                 main data files (imarr & res)
 # **************************************************
 
 import h5py

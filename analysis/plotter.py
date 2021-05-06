@@ -2,11 +2,7 @@
 # * File Name : plotter.py
 # * Creation Date : 2019-07-30
 # * Created By : kstoreyf
-# * Description : Plotting routines:
-#       - plot_comparisons to plot pairs of generated
-#               images and their originals
-#       - plot_dist to plot distribution of anomaly scores
-#       - plot_anoms: plot batch of top anomalous images
+# * Description : Plotting routines for GAN anomaly project
 # ********************************************************
 import os
 import sys

@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : compute_residuals_rgb.py
-# * Creation Date : 2020-07-17
+# * File Name : add_reals_to_results.py
+# * Creation Date :
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Adds luptonized real images to results
+#                 datasets
 # ******************************************************
 
 import numpy as np

@@ -1,3 +1,13 @@
+# ******************************************************
+# * File Name : check_id.py
+# * Creation Date : 
+# * Created By : kstoreyf
+# * Description : For a given image idx, check that the  
+#                 image in our dataset matches with the 
+#                 reconstruction and the original HSC
+#                 catalog
+# ******************************************************
+
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.coordinates import SkyCoord

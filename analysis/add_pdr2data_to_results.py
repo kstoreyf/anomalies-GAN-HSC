@@ -1,9 +1,9 @@
 # ******************************************************
-# * File Name : compute_residuals_rgb.py
-# * Creation Date : 2020-07-17
+# * File Name : add_pdr2data_to_results.py
+# * Creation Date :
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Adds metadata from the HSC PDR2 catalog
+#                 to the image datasets
 # ******************************************************
 
 import numpy as np
@@ -32,7 +32,7 @@ def main():
     object_ids = [info_df['object_id'].loc[idx].astype(np.uint64) for idx in idxs]
     
     print("Creating new dataset")
-    del res["object_ids"] #uncomment if exists bc you messed up!
+    del res["object_ids"] #make sure to run this line if it exists bc you messed up!
     res.create_dataset("object_ids", data=object_ids, dtype='uint64')
     
     print("While we're at it, fix idxs -> integer")

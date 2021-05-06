@@ -1,9 +1,10 @@
 # ******************************************************
-# * File Name : compute_residuals_rgb.py
+# * File Name : make_random_subsample.py
 # * Creation Date : 2020-07-17
 # * Created By : kstoreyf
-# * Description : Computes the image residuals from the
-#                 real & reconstructeds, for RGB images
+# * Description : Make a random subsample of the image
+#                 datasets, for testing or plotting
+#                 purposes
 # ******************************************************
 
 import numpy as np
