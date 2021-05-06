@@ -5,6 +5,7 @@
 # * Description : Saves the discriminator features 
 #       (penultimate layer) for the real and recon-
 #       structed images, and their residual.
+#       (Not used in final paper.)
 # *****************************************************
 
 import os, sys
@@ -30,7 +31,7 @@ import tflib.mnist
 import tflib.plot
 import tflib.datautils
 
-
+# Parameters
 NSIDE = 96
 NBANDS = 3
 NDIM = 512
@@ -39,7 +40,6 @@ IMAGE_DIM = NSIDE*NSIDE*NBANDS
 BATCH_SIZE = 1000
 
 tag = 'gri_lambda0.3_3sigdisc'
-#tag = 'gri_10k_lambda0.3'
 startcount = 0
 
 disctag = 'gri_save'
@@ -48,7 +48,7 @@ disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{disctag}/model-d
 
 result_fn = f'/scratch/ksf293/kavli/anomaly/results/results_{tag}.h5'
 
-print(f"Running discrimatinator feature saving for {tag}")
+print(f"Running discriminator feature saving for {tag}")
 
 print("Loading trained models")
 Discriminator = hub.Module(disc_fn)
@@ -59,20 +59,16 @@ real = tf.placeholder(tf.float32, shape=[None, IMAGE_DIM])
 reconstructed = tf.placeholder(tf.float32, shape=[None, IMAGE_DIM])
 
 disc_real = Discriminator(real, signature='feature_match')
-print(disc_real)
 disc_recon = Discriminator(reconstructed, signature='feature_match')
 disc_resid = tf.abs(tf.subtract(disc_real, disc_recon))
-print(disc_resid)
 
 print(f"Making new datasets for result file at {result_fn}")
-#with h5py.File(result_fn,"a") as fres:
 fres = h5py.File(result_fn,"a")
 if True:
     new_datasets = ['disc_features_real', 'disc_features_recon', 'disc_features_resid']
     for dkey in new_datasets:
         if dkey in fres.keys():
             del fres[dkey]
-    print(ksfsdjf)
     fres.create_dataset('disc_features_real', (0,NFEAT,NFEAT,NDIM), maxshape=(None,NFEAT,NFEAT,NDIM), chunks=(1,NFEAT,NFEAT,NDIM), dtype='uint8')
     fres.create_dataset('disc_features_recon', (0,NFEAT,NFEAT,NDIM), maxshape=(None,NFEAT,NFEAT,NDIM), chunks=(1,NFEAT,NFEAT,NDIM), dtype='uint8')
     fres.create_dataset('disc_features_resid', (0,NFEAT,NFEAT,NDIM), maxshape=(None,NFEAT,NFEAT,NDIM), chunks=(1,NFEAT,NFEAT,NDIM), dtype='uint8')

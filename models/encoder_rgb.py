@@ -1,9 +1,9 @@
 # **************************************************
-# * File Name : encoder.py
+# * File Name : encoder_rgb.py
 # * Creation Date : 2019-08-03
 # * Created By : kstoreyf
 # * Description : Trains an encoder to predict the
-#       latent-space represenation of an image that
+#       latent-space representation of an image that
 #       minimizes its anomaly score.
 # **************************************************
 import os
@@ -30,7 +30,7 @@ import tflib.mnist
 import tflib.plot
 import tflib.datautils
 
-
+# Parameters
 DIM = 64
 NSIDE = 96
 NBANDS = 3
@@ -50,7 +50,7 @@ out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/encoder_{tag}{savetag}
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
-# directory used to be called "out", changed to "wgan"
+# Disc and gen params
 gentag = 'gri_save'
 gennum = 10000
 gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{gentag}/model-gen-{gennum}'
@@ -66,7 +66,6 @@ Generator = hub.Module(gen_fn)
 Discriminator = hub.Module(disc_fn)
 print("Loaded")
 
-
 def LeakyReLU(x, alpha=0.2):
     return tf.maximum(alpha*x, x)
 
@@ -75,19 +74,15 @@ def Encoder_module():
     output = tf.reshape(inputs, [-1, NBANDS, NSIDE, NSIDE])
 
     output = lib.ops.conv2d.Conv2D('Encoder.1', NBANDS, DIM,5,output,stride=2)
-    #output = LeakyReLU(output)
     output = tf.nn.relu(output)
 
     output = lib.ops.conv2d.Conv2D('Encoder.2', DIM, 2*DIM, 5, output, stride=2)
-    #output = LeakyReLU(output)
     output = tf.nn.relu(output)
 
     output = lib.ops.conv2d.Conv2D('Encoder.3', 2*DIM, 4*DIM, 5, output, stride=2)
-    #output = LeakyReLU(output)
     output = tf.nn.relu(output)
     
     output = lib.ops.conv2d.Conv2D('Encoder.4', 4*DIM, 8*DIM, 5, output, stride=2)    
-    #output = LeakyReLU(output)
     output = tf.nn.relu(output)
     
     output = tf.reshape(output, [-1, 8*6*6*DIM])
@@ -99,7 +94,7 @@ def Encoder_module():
 
     return output
 
-
+# Set up encoder, compute residuals
 real = tf.placeholder(tf.float32, shape=[None, IMAGE_DIM])
 encoder_spec = hub.create_module_spec(Encoder_module)
 Encoder = hub.Module(encoder_spec, name='Encoder', trainable=True)
@@ -107,7 +102,6 @@ Encoder = hub.Module(encoder_spec, name='Encoder', trainable=True)
 z = Encoder(real)
 reconstructed = Generator(z)
 
-# TODO: is it ok to minimize the sum of anomaly scores, or should do as vector?
 feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
                         Discriminator(real, signature='feature_match'),
                         Discriminator(reconstructed, signature='feature_match')
@@ -115,17 +109,12 @@ feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
 residual = tf.reduce_sum(tf.abs(tf.subtract(real, reconstructed)), axis=1)
 
 anomaly_score = (1-lambda_weight)*residual + lambda_weight*feature_residual
-print("score parts")
-print(residual)
-print((1-lambda_weight)*residual, lambda_weight*feature_residual)
-print(anomaly_score)
-
 
 enc_cost = tf.reduce_sum(anomaly_score)
 
+# Optimize
 t_vars = tf.trainable_variables()
 params = [var for var in t_vars if 'Encoder' in var.name]
-
 enc_optimizer = tf.train.AdamOptimizer(
         learning_rate=1e-2, #1e-4,
         beta1=0.4,
@@ -136,7 +125,6 @@ data = lib.datautils.load(imarr_fn)
 idxs = range(len(data))
 data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=True, normalize=False, smooth=False)
 
-#fixed_im = data[:128]
 fixed_im, _ = data_gen.sample(128)
 fixed_im_samples = Generator(Encoder(fixed_im.reshape((-1,IMAGE_DIM))))
 fixed_im = fixed_im.reshape((128, NBANDS, NSIDE, NSIDE))
@@ -170,7 +158,6 @@ with tf.Session() as sess:
             print("iteration {}, generating samples".format(iteration))
             lib.plot.flush()
             generate_image(iteration)
-            #print(_z, _enc_cost)
         if (iteration % SAVE_ITERS == 0) and iteration>0:
             enc_fn = out_dir+f'model-encoder-{iteration}'
             if overwrite and os.path.isdir(enc_fn):
