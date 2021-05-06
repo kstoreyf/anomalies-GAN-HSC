@@ -54,26 +54,6 @@ lib.print_model_settings(locals().copy())
 def LeakyReLU(x, alpha=0.2):
     return tf.maximum(alpha*x, x)
 
-def ReLULayer(name, n_in, n_out, inputs):
-    output = lib.ops.linear.Linear(
-        name+'.Linear',
-        n_in,
-        n_out,
-        inputs,
-        initialization='he'
-    )
-    return tf.nn.relu(output)
-
-def LeakyReLULayer(name, n_in, n_out, inputs):
-    output = lib.ops.linear.Linear(
-        name+'.Linear',
-        n_in,
-        n_out,
-        inputs,
-        initialization='he'
-    )
-    return LeakyReLU(output)
-
 def gaussian_noise_layer(input_layer, std):
     noise = tf.random_normal(shape=tf.shape(input_layer), mean=0.0, stddev=std,
                              dtype=tf.float32) 

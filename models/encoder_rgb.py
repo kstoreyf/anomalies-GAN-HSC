@@ -66,9 +66,6 @@ Generator = hub.Module(gen_fn)
 Discriminator = hub.Module(disc_fn)
 print("Loaded")
 
-def LeakyReLU(x, alpha=0.2):
-    return tf.maximum(alpha*x, x)
-
 def Encoder_module():
     inputs = tf.placeholder(tf.float32, shape=[None, IMAGE_DIM])
     output = tf.reshape(inputs, [-1, NBANDS, NSIDE, NSIDE])

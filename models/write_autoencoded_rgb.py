@@ -16,7 +16,6 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 
-import utils
 import tflib as lib
 import tflib.datautils
 
