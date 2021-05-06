@@ -1,0 +1,279 @@
+\begin{thebibliography}{}
+\makeatletter
+\relax
+\def\mn@urlcharsother{\let\do\@makeother \do\$\do\&\do\#\do\^\do\_\do\%\do\~}
+\def\mn@doi{\begingroup\mn@urlcharsother \@ifnextchar [ {\mn@doi@}
+  {\mn@doi@[]}}
+\def\mn@doi@[#1]#2{\def\@tempa{#1}\ifx\@tempa\@empty \href
+  {http://dx.doi.org/#2} {doi:#2}\else \href {http://dx.doi.org/#2} {#1}\fi
+  \endgroup}
+\def\mn@eprint#1#2{\mn@eprint@#1:#2::\@nil}
+\def\mn@eprint@arXiv#1{\href {http://arxiv.org/abs/#1} {{\tt arXiv:#1}}}
+\def\mn@eprint@dblp#1{\href {http://dblp.uni-trier.de/rec/bibtex/#1.xml}
+  {dblp:#1}}
+\def\mn@eprint@#1:#2:#3:#4\@nil{\def\@tempa {#1}\def\@tempb {#2}\def\@tempc
+  {#3}\ifx \@tempc \@empty \let \@tempc \@tempb \let \@tempb \@tempa \fi \ifx
+  \@tempb \@empty \def\@tempb {arXiv}\fi \@ifundefined
+  {mn@eprint@\@tempb}{\@tempb:\@tempc}{\expandafter \expandafter \csname
+  mn@eprint@\@tempb\endcsname \expandafter{\@tempc}}}
+
+\bibitem[\protect\citeauthoryear{Aihara et~al.,}{Aihara
+  et~al.}{2018a}]{Aihara2018a}
+Aihara H.,  et~al., 2018a, \mn@doi [Publications of the Astronomical Society of
+  Japan] {10.1093/pasj/psx066}, 70, S4
+
+\bibitem[\protect\citeauthoryear{Aihara et~al.,}{Aihara
+  et~al.}{2018b}]{Aihara2018b}
+Aihara H.,  et~al., 2018b, \mn@doi [Publications of the Astronomical Society of
+  Japan] {10.1093/pasj/psx081}, 70, S8
+
+\bibitem[\protect\citeauthoryear{Aihara et~al.,}{Aihara
+  et~al.}{2019}]{Aihara2019}
+Aihara H.,  et~al., 2019, \mn@doi [Publications of the Astronomical Society of
+  Japan] {10.1093/pasj/psz103}, 71, 114
+
+\bibitem[\protect\citeauthoryear{Arjovsky, Chintala  \& Bottou}{Arjovsky
+  et~al.}{2017}]{Arjovsky2017}
+Arjovsky M.,  Chintala S.,   Bottou L.,  2017, in Proceedings of the 34th
+  International Conference on Machine Learning. pp PMLR 70:214--223 (\mn@eprint
+  {arXiv} {1701.07875v3}), \url {https://arxiv.org/pdf/1701.07875.pdf}
+
+\bibitem[\protect\citeauthoryear{Avery et~al.,}{Avery et~al.}{2021}]{Avery2021}
+Avery C.~R.,  et~al., 2021, \mn@doi [Monthly Notices of the Royal Astronomical
+  Society] {10.1093/mnras/stab780}, 503, 5134
+
+\bibitem[\protect\citeauthoryear{Baldwin, Phillips  \& Terlevich}{Baldwin
+  et~al.}{1981}]{Baldwin1981}
+Baldwin A.,  Phillips M.~M.,   Terlevich R.,  1981, \mn@doi [Publications of
+  the Astronomical Society of the Pacific] {10.1086/130930}, 93, 817
+
+\bibitem[\protect\citeauthoryear{Baron \& Poznanski}{Baron \&
+  Poznanski}{2017}]{Baron2017}
+Baron D.,  Poznanski D.,  2017, \mn@doi [Monthly Notices of the Royal
+  Astronomical Society] {10.1093/mnras/stw3021}, 465, 4530
+
+\bibitem[\protect\citeauthoryear{Bosch et~al.,}{Bosch et~al.}{2018}]{Bosch2019}
+Bosch J.,  et~al., 2018, \mn@doi [Publications of the Astronomical Society of
+  Japan] {10.1093/pasj/psx080}, 70, S5
+
+\bibitem[\protect\citeauthoryear{Cardamone et~al.,}{Cardamone
+  et~al.}{2009}]{Cardamone2009}
+Cardamone C.,  et~al., 2009, \mn@doi [Monthly Notices of the Royal Astronomical
+  Society] {10.1111/j.1365-2966.2009.15383.x}, 399, 1191
+
+\bibitem[\protect\citeauthoryear{Chalapathy \& Chawla}{Chalapathy \&
+  Chawla}{2019}]{Chalapathy2019}
+Chalapathy R.,  Chawla S.,  2019, Technical report, {Deep Learning for Anomaly
+  Detection: A Survey}.
+ (\mn@eprint {arXiv} {1901.03407})
+
+\bibitem[\protect\citeauthoryear{Corbin, Vacca, Fernandes, Hibbard, Somerville
+  \& Windhorst}{Corbin et~al.}{2006}]{Corbin2006}
+Corbin M.~R.,  Vacca W.~D.,  Fernandes R.~C.,  Hibbard J.~E.,  Somerville
+  R.~S.,   Windhorst R.~A.,  2006, The Astrophysical Journal, 651, 861
+
+\bibitem[\protect\citeauthoryear{{Di Mattia}, Galeone, {De Simoni}  \&
+  Ghelfi}{{Di Mattia} et~al.}{2019}]{DiMattia2019}
+{Di Mattia} F.,  Galeone P.,  {De Simoni} M.,   Ghelfi E.,  2019, Technical
+  report, {A Survey on GANs for Anomaly Detection}.
+ (\mn@eprint {arXiv} {1906.11632})
+
+\bibitem[\protect\citeauthoryear{Dutta, Giannella, Borne  \& Kargupta}{Dutta
+  et~al.}{2007}]{Dutta2007}
+Dutta H.,  Giannella C.,  Borne K.,   Kargupta H.,  2007, in Proceedings of the
+  2007 SIAM International Conference on Data Mining. pp 473--478, \url
+  {http://www.siam.org/journals/ojsa.php}
+
+\bibitem[\protect\citeauthoryear{Edgeworth}{Edgeworth}{1887}]{Edgeworth1887}
+Edgeworth F.~Y.,  1887, \mn@doi [The London, Edinburgh, and Dublin
+  Philosophical Magazine and Journal of Science] {10.1080/14786448708628471},
+  23, 364
+
+\bibitem[\protect\citeauthoryear{Giles \& Walkowicz}{Giles \&
+  Walkowicz}{2019}]{Giles2019}
+Giles D.,  Walkowicz L.,  2019, \mn@doi [Monthly Notices of the Royal
+  Astronomical Society] {10.1093/mnras/sty3461}, 484, 834
+
+\bibitem[\protect\citeauthoryear{Goodfellow, Pouget-Abadie, Mirza, Xu,
+  Warde-Farley, Ozair, Courville  \& Bengio}{Goodfellow
+  et~al.}{2014}]{Goodfellow2014}
+Goodfellow I.~J.,  Pouget-Abadie J.,  Mirza M.,  Xu B.,  Warde-Farley D.,
+  Ozair S.,  Courville A.,   Bengio Y.,  2014, \mn@doi [Advances in Neural
+  Information Processing Systems] {10.3156/jsoft.29.5_177_2}, 3, 2672
+
+\bibitem[\protect\citeauthoryear{Goulding et~al.,}{Goulding
+  et~al.}{2018}]{Goulding2017}
+Goulding A.~D.,  et~al., 2018, \mn@doi [Publ. Astron. Soc. Japan]
+  {10.1093/pasj/xxx000}, 70, S37
+
+\bibitem[\protect\citeauthoryear{Gulrajani, Ahmed, Arjovsky, Dumoulin  \&
+  Courville}{Gulrajani et~al.}{2017}]{Gulrajani2017}
+Gulrajani I.,  Ahmed F.,  Arjovsky M.,  Dumoulin V.,   Courville A.,  2017,
+  NIPS'17: Proceedings of the 31st International Conference on Neural
+  Information Processing Systems, pp 5769--5779
+
+\bibitem[\protect\citeauthoryear{Henrion, Mortlock, Hand  \& Gandy}{Henrion
+  et~al.}{2013}]{Henrion2013}
+Henrion M.,  Mortlock D.~J.,  Hand D.~J.,   Gandy A.,  2013, {Classification
+  and Anomaly Detection for Astronomical Survey Data}.
+Springer New York, New York, NY, pp 149--184,
+  \mn@doi{10.1007/978-1-4614-3508-2_8}
+
+\bibitem[\protect\citeauthoryear{Hoyos, Guzman, Diaz, Koo  \& Bershady}{Hoyos
+  et~al.}{2007}]{Hoyos2007}
+Hoyos G.,  Guzman R.,  Diaz A.,  Koo D.,   Bershady M.,  2007, The Astronomical
+  Journal, 134, 2455
+
+\bibitem[\protect\citeauthoryear{Ivezic et~al.,}{Ivezic
+  et~al.}{2018}]{Ivezic2018}
+Ivezic Z.,  et~al., 2018, \mn@doi [The Astrophysical Journal]
+  {10.3847/1538-4357/ab042c}, 873, 44
+
+\bibitem[\protect\citeauthoryear{Kauffmann et~al.,}{Kauffmann
+  et~al.}{2003}]{Kauffmann2003}
+Kauffmann G.,  et~al., 2003, Monthly Notices of the Royal Astronomical Society,
+  346, 1055
+
+\bibitem[\protect\citeauthoryear{Kewley, Dopita, Heisler  \& Trevena}{Kewley
+  et~al.}{2001}]{Kewley2001}
+Kewley L.~J.,  Dopita M.~A.,  Heisler C.~A.,   Trevena J.,  2001, The
+  Astrophysical Journal, 556, 121
+
+\bibitem[\protect\citeauthoryear{Kojima et~al.,}{Kojima
+  et~al.}{2019}]{Kojima2019}
+Kojima T.,  et~al., 2019, \mn@doi [The Astrophysical Journal]
+  {https://doi.org/10.3847/1538-4357/aba047}, 898, 142
+
+\bibitem[\protect\citeauthoryear{Kr{\"{o}}ger, Hensler  \& Freyer}{Kr{\"{o}}ger
+  et~al.}{2006}]{Kroger2006}
+Kr{\"{o}}ger D.,  Hensler G.,   Freyer T.,  2006, \mn@doi [Astronomy and
+  Astrophysics] {10.1051/0004-6361:200600020}, 450, L5
+
+\bibitem[\protect\citeauthoryear{Li, Chen, Goh  \& Ng}{Li
+  et~al.}{2018}]{Li2018}
+Li D.,  Chen D.,  Goh J.,   Ng S.-K.,  2018, in Workshop on Big Data, Streams
+  and Heterogeneous Source Mining.  (\mn@eprint {arXiv} {1809.04758})
+
+\bibitem[\protect\citeauthoryear{Lochner \& Bassett}{Lochner \&
+  Bassett}{2020}]{Lochner2020}
+Lochner M.,  Bassett B.~A.,  2020
+
+\bibitem[\protect\citeauthoryear{Lupton, Blanton, Fekete, Hogg, O'mullane,
+  Szalay  \& Wherry}{Lupton et~al.}{2004}]{Lupton2004}
+Lupton R.~H.,  Blanton M.~R.,  Fekete G.,  Hogg D.~W.,  O'mullane W.,  Szalay
+  A.,   Wherry N.,  2004, \mn@doi [The Publications of the Astronomical Society
+  of the Pacific] {10.1086/382245}, 116, 133
+
+\bibitem[\protect\citeauthoryear{Mandelbaum et~al.,}{Mandelbaum
+  et~al.}{2018}]{Mandelbaum2018}
+Mandelbaum R.,  et~al., 2018, \mn@doi [Astronomical Society of Japan]
+  {10.1093/pasj/xxx000}, 70, S25
+
+\bibitem[\protect\citeauthoryear{Margalef-Bentabol, Huertas-Company, Charnock,
+  Margalef-Bentabol, Bernardi, Dubois, Storey-Fisher  \&
+  Zanisi}{Margalef-Bentabol et~al.}{2020}]{Margalef-Bentabol2020}
+Margalef-Bentabol B.,  Huertas-Company M.,  Charnock T.,  Margalef-Bentabol C.,
+   Bernardi M.,  Dubois Y.,  Storey-Fisher K.,   Zanisi L.,  2020, \mn@doi
+  [Monthly Notices of the Royal Astronomical Society] {10.1093/mnras/staa1647},
+  496, 2346
+
+\bibitem[\protect\citeauthoryear{Massey, Neugent  \& Levesque}{Massey
+  et~al.}{2019}]{Massey2019}
+Massey P.,  Neugent K.~F.,   Levesque E.~M.,  2019, The Astronomical Journal,
+  157, 227
+
+\bibitem[\protect\citeauthoryear{McInnes, Healy  \& Melville}{McInnes
+  et~al.}{2018}]{McInnes2018}
+McInnes L.,  Healy J.,   Melville J.,  2018, \mn@doi [Journal of Open Source
+  Software] {https://doi.org/10.21105/joss.00861}, 3, 961
+
+\bibitem[\protect\citeauthoryear{Miyazaki et~al.,}{Miyazaki
+  et~al.}{2018}]{Miyazaki2018}
+Miyazaki S.,  et~al., 2018, \mn@doi [Publications of the Astronomical Society
+  of Japan] {10.1093/pasj/psx063}, 70, 1
+
+\bibitem[\protect\citeauthoryear{Mortlock, Patel, Warren, Hewett, Venemans,
+  Mcmahon  \& Simpson}{Mortlock et~al.}{2012}]{Mortlock2012}
+Mortlock D.~J.,  Patel M.,  Warren S.~J.,  Hewett P.~C.,  Venemans B.~P.,
+  Mcmahon R.~G.,   Simpson C.,  2012, \mn@doi [Monthly Notices of the Royal
+  Astronomical Society] {10.1111/j.1365-2966.2011.19710.x}, 419, 390
+
+\bibitem[\protect\citeauthoryear{Osterbrock \& Ferland}{Osterbrock \&
+  Ferland}{2006}]{Osterbrock2006}
+Osterbrock D.~E.,  Ferland G.~J.,  2006, {Astrophysics of gaseous nebulae and
+  active galactic nuclei}.
+University Science Books
+
+\bibitem[\protect\citeauthoryear{Pruzhinskaya, Malanchev, Kornilov, Ishida,
+  Mondon, Volnova  \& Korolev}{Pruzhinskaya et~al.}{2019}]{Pruzhinskaya2019}
+Pruzhinskaya M.~V.,  Malanchev K.~L.,  Kornilov M.~V.,  Ishida E. E.~O.,
+  Mondon F.,  Volnova A.~A.,   Korolev V.~S.,  2019, Monthly Notices of the
+  Royal Astronomical Society, 439, 3591
+
+\bibitem[\protect\citeauthoryear{Reis, Rotman, Poznanski, Prochaska  \&
+  Wolf}{Reis et~al.}{2021}]{Reis2021}
+Reis I.,  Rotman M.,  Poznanski D.,  Prochaska J.~X.,   Wolf L.,  2021, \mn@doi
+  [Astronomy and Computing] {10.1016/j.ascom.2020.100437}, 34, 100437
+
+\bibitem[\protect\citeauthoryear{Salimans, Goodfellow, Cheung, Radford  \&
+  Chen}{Salimans et~al.}{2016}]{Salimans2016}
+Salimans T.,  Goodfellow I.,  Cheung V.,  Radford A.,   Chen X.,  2016,
+  NIPS'16: Proceedings of the 30th International Conference on Neural
+  Information Processing Systems, pp 2234--2242
+
+\bibitem[\protect\citeauthoryear{Schlegl, Seeb{\"{o}}ck, Waldstein,
+  Schmidt-Erfurth  \& Langs}{Schlegl et~al.}{2017}]{Schlegl2017}
+Schlegl T.,  Seeb{\"{o}}ck P.,  Waldstein S.~M.,  Schmidt-Erfurth U.,   Langs
+  G.,  2017, in Information Processing in Medical Imaging.  (\mn@eprint {arXiv}
+  {1703.05921v1}), \mn@doi{10.1007/978-3-319-59050-9_12}
+
+\bibitem[\protect\citeauthoryear{Segal, Parkinson, Norris  \& Swan}{Segal
+  et~al.}{2019}]{Segal2019}
+Segal G.,  Parkinson D.,  Norris R.~P.,   Swan J.,  2019, \mn@doi [Publications
+  of the Astronomical Society of the Pacific] {10.1088/1538-3873/ab0068}, 131
+
+\bibitem[\protect\citeauthoryear{Senchyna et~al.,}{Senchyna
+  et~al.}{2017}]{Senchyna2017}
+Senchyna P.,  et~al., 2017, \mn@doi [Monthly Notices of the Royal Astronomical
+  Society] {10.1093/mnras/stx2059}, 472, 2608
+
+\bibitem[\protect\citeauthoryear{Solarz, Bilicki, Gromadzki, Pollo, Durkalec
+  \& Wypych}{Solarz et~al.}{2017}]{Solarz2017}
+Solarz A.,  Bilicki M.,  Gromadzki M.,  Pollo A.,  Durkalec A.,   Wypych M.,
+  2017, \mn@doi [Astronomy and Astrophysics] {10.1051/0004-6361/201730968}, 606
+
+\bibitem[\protect\citeauthoryear{Sun et~al.,}{Sun et~al.}{2018}]{Sun2018}
+Sun A.~L.,  et~al., 2018, \mn@doi [Monthly Notices of the Royal Astronomical
+  Society] {10.1093/mnras/sty1394}, 480, 2302
+
+\bibitem[\protect\citeauthoryear{Wong et~al.,}{Wong et~al.}{2018}]{Wong2018}
+Wong K.~C.,  et~al., 2018, The Astrophysical Journal, 867
+
+\bibitem[\protect\citeauthoryear{Wylezalek, Flores, Zakamska, Greene  \&
+  Riffel}{Wylezalek et~al.}{2020}]{Wylezalek2020}
+Wylezalek D.,  Flores A.~M.,  Zakamska N.~L.,  Greene J.~E.,   Riffel R.~A.,
+  2020, \mn@doi [Monthly Notices of the Royal Astronomical Society]
+  {10.1093/MNRAS/STAA062}, 492, 4680
+
+\bibitem[\protect\citeauthoryear{Yang, Malhotra, Rhoads  \& Wang}{Yang
+  et~al.}{2017}]{Yang2017}
+Yang H.,  Malhotra S.,  Rhoads J.~E.,   Wang J.,  2017, The Astrophysical
+  Journal, 847, 38
+
+\bibitem[\protect\citeauthoryear{York et~al.,}{York et~al.}{2000}]{York2000}
+York D.~G.,  et~al., 2000, The Astronomical Journal, 120, 1579
+
+\bibitem[\protect\citeauthoryear{Zenati, Foo, Lecouat, Manek  \&
+  Chandrasekhar}{Zenati et~al.}{2018a}]{Zenati2018a}
+Zenati H.,  Foo C.~S.,  Lecouat B.,  Manek G.,   Chandrasekhar V.~R.,  2018a,
+  in The Sixth International Conference on Learning Representations.
+  (\mn@eprint {arXiv} {1802.06222})
+
+\bibitem[\protect\citeauthoryear{Zenati, Romain, Foo, Lecouat  \&
+  Chandrasekhar}{Zenati et~al.}{2018b}]{Zenati2018}
+Zenati H.,  Romain M.,  Foo C.~S.,  Lecouat B.,   Chandrasekhar V.,  2018b, in
+  Proceedings - IEEE International Conference on Data Mining, ICDM. pp 727--736
+  (\mn@eprint {arXiv} {1812.02288v1}), \mn@doi{10.1109/ICDM.2018.00088}
+
+\makeatother
+\end{thebibliography}

@@ -1,0 +1,857 @@
+%\documentclass{article}
+% mnras_guide.tex
+%
+% MNRAS LaTeX user guide
+%
+% v3.0 released 22 May 2015
+% (version numbers match those of mnras.cls)
+%
+% Copyright (C) Royal Astronomical Society 2015
+% Authors:
+% Keith T. Smith (Royal Astronomical Society)
+
+% Change log
+%
+% v3.0   September 2013 - May 2015
+%    First version: complete rewrite of the user guide
+%    Basic structure taken from mnras_template.tex by the same author
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Basic setup. Most papers should leave these options alone.
+\documentclass[fleqn,usenatbib,useAMS]{mnras}
+
+%%%%% AUTHORS - PLACE YOUR OWN PACKAGES HERE %%%%%
+
+% Only include extra packages if you really need them. Common packages are:
+\usepackage{caption}
+%\usepackage{subcaption}
+\captionsetup{compatibility=false}
+\usepackage{graphicx}	% Including figure files
+\usepackage{amsmath}	% Advanced maths commands
+\usepackage{amssymb}	% Extra maths symbols
+\usepackage{multicol}        % Multi-column entries in tables
+\usepackage{bm}		% Bold maths symbols, including upright Greek
+\usepackage{pdflscape}	% Landscape pages
+\usepackage{afterpage}
+\usepackage{subfig}
+\usepackage{xcolor,listings}
+\usepackage{enumerate}
+
+%\usepackage{textcomp}
+\lstset{upquote=true}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%% AUTHORS - PLACE YOUR OWN MACROS HERE %%%%%%
+
+% Please keep new commands to a minimum, and use \newcommand not \def to avoid
+% overwriting existing commands. Example:
+%\newcommand{\pcm}{\,cm$^{-2}$}	% per cm-squared
+\newcommand{\kms}{\,km\,s$^{-1}$} % kilometres per second
+\newcommand{\bibtex}{\textsc{Bib}\!\TeX} % bibtex. Not quite the correct typesetting, but close enough
+\newcommand{\sig}{$\sigma$} %adds extra space when followed by punctuation! need to fix 
+\newcommand{\KSF}[1]{\textcolor{teal}{{[KSF says: #1]}}}
+\newcommand{\alexie}[1]{\textcolor{magenta}{{[Alexie: #1]}}}
+\DeclareMathOperator*{\maxi}{max}
+\DeclareMathOperator*{\mini}{min}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% Use vector fonts, so it zooms properly in on-screen viewing software
+% Don't change these lines unless you know what you are doing
+\usepackage[T1]{fontenc}
+\usepackage{ae,aecompl}
+
+% MNRAS is set in Times font. If you don't have this installed (most LaTeX
+% installations will be fine) or prefer the old Computer Modern fonts, comment
+% out the following line
+\usepackage{newtxtext,newtxmath}
+% Depending on your LaTeX fonts installation, you might get better results with one of these:
+%\usepackage{mathptmx}
+%\usepackage{txfonts}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+%\parindent 14
+
+%\usepackage[sort&compress]{natbib}
+
+
+%%%%%%%%%%%%%%%%%%% TITLE PAGE %%%%%%%%%%%%%%%%%%%
+
+% Title of the paper, and the short title which is used in the headers.
+% Keep the title short and informative.
+\title[Anomalies in Hyper Suprime-Cam Images]{Anomaly Detection in Hyper Suprime-Cam Images with Generative Adversarial Networks}
+
+% The list of authors, and the short list which is used in the headers.
+% If you need two or more lines of authors, add an extra line using \newauthor
+\author[Storey-Fisher et al]{Kate Storey-Fisher$^{1}$\thanks{Contact e-mail: \href{mailto:k.sf@nyu.edu}{k.sf@nyu.edu}},
+Marc Huertas-Company$^{2,3}$,
+Nesar Ramachandra$^{4}$,
+\newauthor
+Francois Lanusse$^{5}$,
+Alexie Leauthaud$^{6}$, 
+Yifei Luo$^{6}$,
+Song Huang$^{7}$
+% }
+\\
+% List of institutions
+$^{1}$ Center for Cosmology and Particle Physics, Department of Physics, New York University, NY 10003, USA\\
+$^{2}$ Instituto de Astrof\'isica de Canarias (IAC); Departamento de Astrof\'isica, Universidad de La Laguna (ULL), E-38200, La Laguna, Spain\\
+$^{3}$ LERMA, Observatoire de Paris, CNRS, PSL, Universit\'e Paris Diderot, France\\
+$^{4}$ High Energy Physics Division, Argonne National Laboratory, Lemont, IL 60439, USA\\
+$^{5}$ AIM, CEA, CNRS, Universit\'e Paris-Saclay, Universit\'e Paris Diderot\\
+$^{6}$ Department of Astronomy and Astrophysics, University of California, Santa Cruz, Santa Cruz, CA 95064, USA \\
+$^{7}$ Department of Astrophysical Sciences, Princeton University, Princeton, NJ 08544, USA\\
+}
+% These dates will be filled out by the publisher
+\date{Last updated 2019 September 15}
+
+% Enter the current year, for the copyright statements etc.
+\pubyear{2019}
+
+% COMMENT OUT WHEN DONE
+%\hypersetup{draft}
+% Don't change these lines
+\begin{document}
+\label{firstpage}
+\pagerange{\pageref{firstpage}--\pageref{lastpage}}
+\maketitle
+
+% Abstract of the paper
+\begin{abstract}
+The problem of anomaly detection in astronomical surveys is becoming increasingly important as data sets grow in size.
+Unsupervised learning presents an approach for identifying outliers in data sets without prior labelling of data or specification of the outliers. 
+We present the results of an anomaly detection method using Wasserstein generative adversarial networks (WGANs) on optical galaxy images in the Hyper Suprime-Cam (HSC) survey.
+The WGAN is trained on the entire data set, and we find that it is able to generate realistic HSC-like galaxies that follow the distribution of the training data. 
+We identify images which are less well-represented in the generator's latent space, and which the discriminator flags as less realistic; these are thus anomalous with respect to the rest of the data.
+We propose a new approach to characterize the images with high WGAN-assigned anomaly scores, using a convolutional autoencoder (CAE) to reduce the dimensionality of the residual differences between the real and WGAN-reconstructed images and performing clustering based on these encodings.
+We construct a subsample of $\sim$9,000 highly anomalous images from our nearly million object sample, and further distinguish pipeline and observational errors from interesting anomalies with scientific potential; these include galaxy mergers, tidal features, and extreme star-forming galaxies.
+Our technique combining WGANs and CAEs provides a scalable and reproduceable approach to boosting unsupervised discovery in the era of big data astrophysics.
+We have published a catalog with the anomaly scores of objects in our HSC dataset, as well as the interesting objects we have already identified.
+The code and catalog are available at \texttt{github.com/kstoreyf/anomalies-GAN-HSC}.
+
+\end{abstract}
+
+% Select between one and six entries from the list of approved keywords.
+% Don't make up new ones.
+%\begin{keywords}
+%\end{keywords}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%% BODY OF PAPER %%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+Many discoveries in astronomy have been made by identifying unexpected outliers in collected data (e.g. \citealt{Cardamone2009}, \citealt{Massey2019}). 
+These outliers, also referred to as anomalies or novelties, are data points that lie outside of the normal distribution of data.
+In the astronomy context, we are interested in finding unknown classes of objects, objects belonging to rare classes, and individual objects of known type with anomalous properties.
+As data sets increase in size, automated methods for detecting these outliers are becoming necessary.
+The Sloan Digital Sky Survey (SDSS) surveyed one third of the sky and observed over 1 billion cataloged objects \citep{York2000}.
+In the near future, the Rubin Observatory will observe 40 billion objects \citep{Ivezic2018}.
+These present opportunities for novel discoveries in their massive data sets, as well as the need for new, automated methods to filter the data and identify anomalies.
+
+Outlier identification has been an area of study since as early as the 19th century \citep{Edgeworth1887}.
+More recent work in anomaly detection for astronomy has applied a range of statistical and computational techniques.
+A nearest neighbors approach, often combined with a dimensionality reduction step, has been used for outlier detection in cross-matched astronomical data sets \citep{Henrion2013}.
+Applications often target specific types of objects, such as using Bayesian model selection to select rare high-redshift quasars from a star-dominated population \citep{Mortlock2012}.
+Another approach is Principal Component Analysis (PCA) to identify distinguishing features; for instance, \cite{Dutta2007} used PCA for anomaly detection in SDSS and 2MASS flux and surface brightness data.
+
+Machine learning methods are being rapidly developed as approaches to anomaly detection in astronomy and other fields.
+A review of anomaly detection methods and applications using deep learning is presented in \cite{Chalapathy2019}.
+Unsupervised learning lends itself to this problem, as it allows for outlier identification without expert labelling of training data or introducing biases based on expected outliers.
+\cite{Baron2017} use random forests to find outliers in Sloan Digital Sky Survey (SDSS) spectroscopic data.
+\cite{Solarz2017} apply support vector machines to find anomalies in the Wide-field Infrared Survey Explorer (WISE) survey.
+Unsupervised learning has also been applied to anomaly detection problems beyond galaxy surveys, including on supernovae data \citep{Pruzhinskaya2019} and Kepler light curves \citep{Giles2018}.
+General frameworks for anomaly detection have also been developed, such as the combined machine learning--human input approach of \cite{Lochner2020}.
+
+Deep generative models present another class of approaches to anomaly detection.
+These have a natural application to identifying outliers, as they are able to model complex distributions of high-dimensional data.
+One model class is generative adversarial networks (GANs), proposed by \cite{Goodfellow2014}.
+A GAN consists of a convolutional network known as a ``discriminator'' and a deconvolutional network known as a ``generator.'' 
+The role of the generator is to learn a model of the training data set, and generate realistic images that follow the same distribution.
+The discriminator is tasked with determining whether an image is real, i.e. from the training set, or fake, i.e. from the generator.
+With respect to anomaly detection, the generator will be able to better model images that are more common in the training set, and will perform worse on images that are more anomalous relative to the rest of the data.
+The discriminator learns to distinguish between real and generated images, and will identify the poorly generated images which tend to be more anomalous.
+
+GANs were first applied to anomaly detection by \cite{Schlegl2017}, in the context of medical imaging.
+They demonstrate that a GAN trained on normal images can then be used to identify abnormal images.
+\cite{Zenati2018} show that training an encoder simultaneously with the GAN improves testing efficiency, and they demonstrate their performance on outlier detection tasks on a range of high-dimensional data.
+GANs have also been used to detect outliers in time-series data \citep{Li2018}.
+Recently, \cite{Margalef-Bentabol2020} used a GAN to detect merging galaxies and compare galaxy simulations against observations. 
+\cite{DiMattia2019} present a survey of the application of GANs to anomaly detection and perform empirical validation of the models.
+
+The Hyper Suprime-Cam Subaru Strategic Program (HSC-SSP) is a natural data set for anomaly detection applications \citep{Miyazaki2018}.
+It is a wide-field optical survey with very good seeing and a deep magnitude limit, containing nearly half a billion primary objects.
+Many interesting objects have already been identified in HSC, including interacting galaxies \citep{Goulding2017} and gravitationally lensed objects \citep{Wong2018}.
+We are interested in finding more of these types of objects, as well as potentially extreme color galaxies, galaxies with extreme activity, rare quasars, and other scientifically interesting objects.
+In addition to these, anomaly detection will be useful for filtering out instrumentation and pipeline errors in HSC.
+
+In this work, we train a Wasserstein GAN to identify anomalous objects in a subsample of images of the deep sky.
+We then characterize the anomalous images with a new convolutional autoencoder-based approach, and identify a set of scientifically interesting anomalies.
+This paper is organized as follows.
+In Section~\ref{sec:data}, we detail the galaxy image data set used in our application.
+We describe our WGAN model, approach to anomaly score assignment, and CAE technique for characterization in Section~\ref{sec:model}.
+In Section~\ref{sec:results} we discuss our results and show anomalous galaxies identified with our framework.
+We present a summary and our conclusions in Section~\ref{sec:conclusions}.
+
+\section{Data}
+\label{sec:data}
+
+\subsection{Hyper Suprime-Cam Survey}
+
+We use data from the Hyper Suprime-Cam Subaru Strategic Program.
+The wide-field optical survey is imaged with the Subaru Telescope and has been ongoing since March 2014.
+The second public data release (PDR2, \citealt{Aihara2014}) contains over 430 million primary objects in the wide field covering 1114 deg$^2$. The area observed in full-depth full-color covers 305 deg$^2$.
+These objects are observed in 5 broad-band filters, \textit{grizy}, down to a magnitude limit of $\sim$26. 
+
+
+\subsection{Selection of Sample} 
+
+We start from a catalog of detected objects and choose a magnitude slice for our analysis, with $20.0<i<20.5$. 
+This allows for a more consistent sample in object size. We note that this choice is important for ease of analysis, as detection on a wide range of magnitudes runs the risk of a bias towards identifying bright objects as anomalies.
+For application to larger samples, one could train separate WGANs on each slice, or carefully choose training batches to balance magnitudes; we leave this for future work.
+
+We exclude objects flagged as having significant issues by the pipeline. 
+These are, in any band: cosmic rays crossing the center pixel, saturated center pixel, interpolated center pixel, source at edge of survey volume, failed flux fit.
+The full query, including these cuts and the information we retain about each sample, is reproduced in Appendix~\ref{sec:query}.
+
+We generate cutouts of $96 \times 96$ pixels ($\sim15\times 15$ arcsec) around each object; this captures the entirety of most objects while still being a reasonable size for training the network.
+We use the $gri$-bands to get 3-color images.
+This results in a sample of 942,782 objects, consisting of $\sim$70\% extended objects and $\sim$30\% compact objects, as categorized by the HSC pipeline. \KSF{TODO: check these numbers}
+A random subsample from our final training data selection is shown in Figure \ref{fig:real}.
+
+We first preprocess the images to avoid issues due to the raw data range spanning multiple orders of magnitude.
+We convert the flux values to RGB values using the method of \citealt{Lupton2004}, producing values from 0 to 255 for each pixel in each band, and then normalize these values individually to between 0 and 1.
+This scaling may affect the features identified by the WGAN as anomalous; for instance, it may suppress the degree of anomaly of galaxies that have extremely high or low flux in certain regions.
+However, the rescaled images should largely retain the information about each object, which is sufficient for this work; we leave further exploration of the effect of flux conversions to future work.
+
+\section{Model and Training}
+\label{sec:model}
+
+\subsection{WGAN Architecture and Training}
+
+\KSF{TODO: i plan on updating and fleshing out this whole section! i will base it on the one in Margalef-Bentabol 2020, as our approach with the WGAN is very similar. this will include more of the theory behind WGANs, and properly annotated equations.}
+We construct a standard Wasserstein generative adversarial network with Gradient Penalty based on the implementation by \cite{Gulrajani2017}.
+The basic setup is a generator and a discriminator with separate loss functions, which compete against each other in a minimax game.
+The discriminator learns to distinguish real images from those generated by the generator.
+The generator, in turn, learns how realistic its generated images are based on feedback from the discriminator.
+The loss function to optimize is then
+\begin{multline}
+\mini_G \, \maxi_D \, L(D,G) = \mathbb{E}_{x\sim p_{\mathrm{real}}(x)}[\mathrm{log} D(x)] \: + \\ \mathbb{E}_{z\sim p_{\mathrm{latent}}(z)}[\mathrm{log}(1 - D(G(z)))] 
+\end{multline}
+\KSF{TODO: make clear that this is the traditional formulation (check notation), and then describe WGAN-GP in more detail with correct loss function}
+
+GANs are notorious for instability in training; balancing the generator and discriminator losses is nontrivial.
+One improvement to this loss function to use the Wasserstein distance to compute the distance between probability distributions \citep{Arjovsky2017}.
+This is a more meaningful distance measure and is smooth even when the distributions are disjoint. 
+Another issue is caused by the gradient vanishing when the discriminator is perfect, so the loss function cannot continue to be updated.
+One approach to solve this is by applying a ''gradient penalty'' (GP) to penalize the loss.
+These two improvements are known as a WGAN-GP, and we use this construction in our GAN.
+The implementation is in \texttt{tensorflow} and \texttt{python}.
+
+We construct our generator to have a depth of 4 with a latent space of dimension 128, and a sigmoid activation function.
+The discriminator also has a depth of 4.
+We train the GAN in batches of 32 images, with 5 discriminator updates per generator update.
+We finalize the model at around 10,000 training iterations, after which the generator and discriminator losses stabilize and no longer improve.
+
+A random sample of images generated with this GAN, starting from random noise, is shown in Figure \ref{fig:gen}.
+We can see that the GAN is able to generate realistic images for less extended objects.
+However, it also generates some diffuse-looking images that do not look like not realistic galaxies.
+
+\begin{figure}
+
+    \centering
+    \includegraphics[trim={288 192 672 0},clip,width=\columnwidth]{out_gri_save_real}
+    \caption{A subsample of the data sample used for training the GAN and identifying anomalies.}
+    \label{fig:real}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includegraphics[trim={0 192 960 0},  clip, width=\columnwidth]{out_gri_save_samples_10000}
+    \caption{A random sample of images generated by the GAN, each starting from random noise.}
+    \label{fig:gen}
+\end{figure}
+
+\subsection{Anomaly Score Assignment}
+\label{sec:sanom_assignment}
+
+The basic procedure for anomaly detection involves setting the WGAN to generate its best reconstruction of each image.
+A poorly reconstructed image should indicate an object that is anomalous with respect to the rest of the sample, as the WGAN has learned the global distribution of the data and will be better at generating ``typical'' images.
+This approach requires an inverse mapping from images to the WGAN's latent space and a quantification of anomalousness.
+
+To perform this inverse mapping, we use the trained generator and discriminator from the WGAN (no longer updating the weights).
+Typically one starts from a random draw from the WGAN's latent space, and optimizes to find the vector that achieves the best reconstruction of a given image (e.g. \citealt{Schlegl2017}).
+Specifically, we aim to minimize a loss $\mathcal{L}$ based on the difference between the original and reconstructed image, in both pixel-space and feature-space.
+The generator score $s_\mathrm{gen}$ is the mean square error (MSE) of the pixel-wise difference between the generator-reconstructed image and the original.
+We also use the discriminator to perform feature-matching to capture whether the reconstruction contains similar features as the original.
+The discriminator score $s_\mathrm{disc}$ is calculated by feeding this generator reconstruction through the discriminator and extracting its 6x6 representation from the penultimate layer, doing the same for the original image, and computing the MSE between these.
+The total loss then $\mathcal{L} = (1-\lambda) \, s_\mathrm{gen} + \lambda \, s_\mathrm{disc}$, where $\lambda$ is a weighting hyperparameter.
+For this application we choose $\lambda=0.05$ to balance the difference in raw score distributions; in future work we will explore a more well-motivated treatment of score weighting.
+
+This minimization procedure is a time-limiting step for large samples, so we propose an improvement: we first train an encoder, a straightforward convolutional network, on the entire training sample to make a first approximation of the latent-space vector.
+This encoder simply provides a better initial guess of the latent-space location and does not significantly affect the final reconstruction.
+We then start from the encoder approximation and, for each image individually, perform a basic minimization of $\mathcal{L}$, optimizing for 10 iterations (though the score usually converges before this).
+This final loss value $\mathcal{L}_\mathrm{final}$ quantifies the degree of anomaly of the image, so we assign this to be the image's anomaly score, $s_\mathrm{anom} = \mathcal{L}_\mathrm{final}$. 
+Higher anomaly scores indicate more anomalous objects, while lower scores indicate objects better modeled by the WGAN; the scores are relative and meaningful only with respect to the rest of the sample.
+
+\begin{figure*}
+\begin{subfigure}{.325\textwidth}
+  \centering
+  % include first image
+  \includegraphics[width=1\linewidth]{recons_n3n1sig_3}  
+  \caption{}
+  \label{fig:recon_neg}
+\end{subfigure}
+\hfill
+\begin{subfigure}{.325\textwidth}
+  \centering
+  % include second image
+  \includegraphics[width=1\linewidth]{recons_24sig_3}  
+  \caption{}
+  \label{fig:recon_3sig}
+\end{subfigure}
+\hfill
+\begin{subfigure}{.325\textwidth}
+  \centering
+  % include fourth image
+  \includegraphics[width=1\linewidth]{recons_59sig_3.png}
+  \caption{}
+  \label{fig:recon_5sig}
+\end{subfigure}
+\caption{The results of WGAN image reconstruction and anomaly score assignment. The top row of each panel shows the original image, the second row shows the best WGAN reconstruction, and the bottom row shows the residual between the two. The assigned anomaly score is shown at the top of each column. The images in each panel are random samples of images in the following ranges of anomaly score: (a) significantly below the mean, (b) around $3\sigma$ above the mean, (c) greater than $5\sigma$ above the mean. It is clear that higher anomaly scores are indicative of poorer WGAN reconstructions and hence larger residuals.}
+\label{fig:recon}
+\end{figure*}
+
+The result of this process is shown in Figure \ref{fig:recon}.
+We can see that the WGAN is able to generate realistic images; for compact objects with standard colors, it constructs images nearly identical to the original, and assigns the objects low anomaly scores (Figure \ref{fig:recon_neg}).
+The model is more challenged to generate objects with rare features or colors, as in the images with scores around $3\sigma$ above the mean shown in Figure \ref{fig:recon_3sig}.
+Finally, objects with pipeline errors, such as complete saturation in one of the color bands, have extremely high anomaly scores, as the WGAN struggles to reconstruct them (Figure \ref{fig:recon_5sig}).
+
+\subsection{Dimensionality Reduction with a Convolutional Autoencoder}
+\label{sec:cae}
+
+A general problem with anomaly detection is to distinguish potentially interesting objects from trivial data issues.  
+We propose here a new approach based on Convolutional Autoencoders (CAEs) to postprocess and explore identified anomalies. 
+We expect the residual images, the difference between the real and reconstructed images, to contain information about why the WGAN marked an object as anomalous.
+(We use the absolute difference because we are restricted to positive pixel values on the RBG scale, though this does lose potentially useful information.)
+However, the pixel space is very high-dimensional, and contains information less relevant to the anomalous features we are interested in, such as background noise.
+
+To reduce the dimensionality of the data and isolate the relevant information, we trained a CAE to map the pixels to a 32-dimensional vector.
+The CAE has 4 encoding and 4 decoding layers, and uses a standard MSE loss between the true and reconstructed image.
+We train the CAE in batches of 32 images, and stop the training when the loss converges after 10,000 iterations. \KSF{TODO: check this number}
+We then use the CAE to encode each of the $\sim$940,000 images into a 32-dimensional vector.
+We confirm that the CAE maps the encoded vectors to images that are reasonable reconstructions originals.
+This autoencoding step allows us to extract the information most relevant to the anomalous features of the image, and perform further characterization to distinguish interesting anomalies; we demonstrate this in Section~\ref{sec:cae-umap}.
+
+\section{Results}
+\label{sec:results}
+
+\subsection{Anomaly Score Distribution}
+\label{sec:sanom_dist}
+
+\KSF{TODO: this section will be updated when i fix the anomaly score assignment - normalizing the scores, and choosing a more reasonable weighting between gen and disc scores. this will also alter the highly-anomalous sample i use for the rest of the analysis, so many figures in the paper will change slightly.}
+We compute anomaly scores for each of the $\sim$940,000 objects in our sample; their distribution is shown in Figure \ref{fig:dist}.
+Higher anomaly scores indicate more anomalous objects, while lower scores indicate objects that are more well-modeled by the GAN.
+The distribution is skewed towards higher scores, which is expected: most typical objects are reconstructed well by the GAN so have similar scores, while there are more ways to be anomalous than to be typical, resulting in a wider range of scores.
+\KSF{I wrote 80 in the figure caption, figure out which is correct!}
+There are 18 objects with extremely high anomaly scores, between 4,000 and 11,000, not shown on the figure for clarity.
+There are 9,648 objects with scores greater than 3\sig above the mean, just over 1\% of the data set; we take these as our anomaly sample and perform further classification on this sample.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{dist_gri_max4000}
+    \caption{The distribution of anomaly scores for the $\sim$940,000 objects in our sample. The solid line shows the sample mean; the dashed lines show 1\sig, 2\sig, and 3\sig away from the mean. There are 80 objects with scores greater than 4000 not shown on the figure for clarity. \KSF{note: this figure will be updated with normalized, re-weighted anomaly scores}}
+    \label{fig:dist}
+\end{figure}
+
+The anomaly scores are a weighted combination of the generator and discriminator scores, as described in Section~\ref{sec:sanom_assignment}.
+We look at the correlation between the scores from these competing models to determine if they are picking up on similar or different information; this is shown in Figure \ref{fig:gendisc}.
+As expected, objects with a higher generator score tend to have a higher discriminator score.
+We also see that there are populations of objects with one score relatively higher than the other, as well as clusters in this space.
+This suggests that there are classes of objects that the generator reproduces well in pixel space but contains anomalous features or patterns in the latent space of the discriminator.
+We explore these regions further in our anomaly characterization approach.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\columnwidth]{residuals_gri_max4000}
+    \caption{Discriminator vs. generator scores, based on the residuals from each network, for our sample. Objects with a generator score over 4000 are not shown. \KSF{note: this figure will be updated with normalized, re-weighted anomaly scores}}
+    \label{fig:gendisc}
+\end{figure}
+
+
+\subsection{Autoencoder Results Visualized with UMAP Clustering}
+\label{sec:cae-umap}
+
+We visualize the image distribution with a Uniform Manifold Approximation and Projection (UMAP, \citealt{McInnes2018}), a dimensionality reduction algorithm that maps the objects into a 2D representation.
+This is useful for understanding the global properties of the distribution, and exploring the types of objects in the sample through their clustering UMAP-space.
+We first perform a UMAP embedding on a 100,000-object subsample of our data set, and look at the correlation between the UMAP and our WGAN-assigned anomaly scores; this is shown in Figure~\ref{fig:umap_100k}.
+An embedding directly on the 3-color image pixels is shown in Figure~\ref{fig:umap_100k_reals}.
+While there is some structure in the distribution, and some regions that tend to have higher anomaly scores, there is no clear relationship between score and UMAP location.
+We next embed the residual image pixel values between the original images and the WGAN reconstruction, as we expect the residuals to contain information about the magnitude and type of anomaly; this is shown in Figure~\ref{fig:umap_100k_resids}.
+We see an increased amount of structure, including clear boundaries in UMAP-space, as well as a clear clustering of highly anomalous images at the center of the distribution.
+This indicates that the residual image contains information more relevant to the anomaly score.
+
+In both of these cases, the objects used for embedding are extremely high-dimensional: the image cutouts are $96 \times 96$ pixels in 3 color bands, totaling 27,648 dimensions. 
+We train a convolutional autoencoder (CAE) to reduce the dimensionality of these images, as described in Section~\ref{sec:cae}.
+The CAE finds a 32-dimensional latent-space representation of each original image, and separately of each residual image.
+We first apply the UMAP to embed these autoencoded low-dimensional representations of the original images; this is shown in Figure~\ref{fig:umap_100k_reals_auto}.
+We see that there is now a more coherent structure compared to the UMAP directly on the original image pixels.
+There is also a stronger trend with anomaly score, though there is still significant scatter.
+Finally, we show the result of embedding the autoencoded residual images in Figure~\ref{fig:umap_100k_resids_auto}. 
+We obtain a coherent distribution with a very clear gradient in anomaly score.
+This indicates that the CAE applied to the residual images is extracting information that is the most relevant to the WGAN-assigned anomaly score, as compared to the image pixels or the original images.
+This provides support that our CAE technique, combined with our WGAN approach to anomaly detection, is useful for consolidating the information in the galaxy images relevant to their abnormality.
+In the next section, we show that this is applicable to the further characterization of the images that were ranked as anomalous by the WGAN.
+
+
+\begin{figure*} 
+\begin{subfigure}{.48\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_gri_100k_reals}  
+  \caption{Embedding with original image pixels.}
+  \label{fig:umap_100k_reals}
+\end{subfigure}
+\begin{subfigure}{.48\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_gri_100k_resids}  
+  \caption{Embedding with residual image pixels.}
+  \label{fig:umap_100k_resids}
+\end{subfigure}
+
+\begin{subfigure}{.48\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_gri_100k_reals_auto}  
+  \caption{Embedding with autoencoded original images.}
+  \label{fig:umap_100k_reals_auto}
+\end{subfigure}
+\begin{subfigure}{.48\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_gri_100k_resids_auto}  
+  \caption{Embedding with autoencoded residual images.}
+  \label{fig:umap_100k_resids_auto}
+\end{subfigure}
+
+\caption{The anomalies in our sample visualized with a UMAP in two dimensions, with different features used for the UMAP embedding. The choice of autoencoded residual images (lower right) produces a UMAP distribution that is most strongly correlated with anomaly score. \KSF{ideally this would be full distribution, but getting memory issues with UMAP; TODO, revisit this issue}}
+\label{fig:umap_100k}
+\end{figure*}
+
+\subsection{Characterization of Anomalies with the WGAN, CAE, and UMAP}
+
+We use our WGAN-based anomaly score and our autoencoded residual images to explore and characterize the anomalous objects in our data set.
+We perform a UMAP embedding of the autoencoded residuals for just the objects with an anomaly score $>3\sigma$ above the mean, as we are now interested in identifying the scientifically interesting anomalies among the high-scoring objects.
+This UMAP is shown in Figure~\ref{fig:umap_3sig_boxes}.
+The UMAP shows a significant amount of structure, with clearly separated clusters around the edges of the distribution that tend to have higher anomaly scores, while objects just passing the $3\sigma$ threshold are more evenly located in the center of the distribution.
+
+In exploring the objects in this distribution, we find that the clustering reflects similarities in the objects and their residuals.
+We demonstrate this by showing galaxies located in various regions of the UMAP, indicated by the colored boxes on Figure~\ref{fig:umap_3sig_boxes}.
+Panels (b)-(e) of Figure~\ref{fig:boxes} show a random selection of galaxies from each of the boxes of the corresponding color.
+The differences in the regions are clear visually.
+The images in Figure~\ref{fig:recons_green}, corresponding to the green box in the upper left of the UMAP, generally have central galaxies with companions or background objects, along with significant noise.
+The WGAN reconstructions and the residuals between these and the original images suggest that these features are indeed related to the high anomaly score assignment: the WGAN did not fully generate some companion objects nor the noise background.
+Figure~\ref{fig:recons_magenta} shows objects in the center of the UMAP, corresponding to the magenta box.
+All of these images are characterized by strong green-ish noise.
+Some contain extremely faint sources, which the WGAN either over- or under-generates; others are compact central objects with a similar yellow-green color.
+The images in Figure~\ref{fig:recons_blue} are all an extreme, saturated blue color, indicating pipeline or observation issues.
+The WGAN clearly struggles to recreate these atypical images with strong colors and unclear central sources.
+All of the attempted reconstructions are in fact very similar, likely because there is only a small region of the WGAN's latent space that can produce images resembling these as they are far from typical training set images.
+Finally, Figure~\ref{fig:recons_red} shows objects with strong noise backgrounds of a single color, with extreme-colored bright compact sources at the center.
+The WGAN has difficulty generating images with the proper combination of colors, as can be seen in the attempted reconstructions.
+
+These sets of galaxies with distinct anomalous features demonstrate how our WGAN-based approach, combined with the CAE-enabled UMAP distribution, provides a useful way of characterizing anomalies.
+Our approach of focusing on the residual images between the WGAN reconstruction and the original allows for characterization based on a variety of features including galaxy morphology, galaxy color, companion galaxies present, noise background, and saturation effects.
+The CAE dimensionality reduction allows for further focus on the relevant features.
+We built a custom visualization tool to interactively explore the UMAP space in more detail, based on a similar tool by \cite{Reis2019}.\footnote{\texttt{https://weirdgalaxi.es}}
+We used this tool to perform a more detailed search for scientifically interesting anomalies; the results of this search are described in Section~\ref{sec:interesting}.
+
+\begin{figure*}
+\begin{subfigure}{0.75\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{umap_3sig_resids_auto_boxes}  
+  \vspace{-2em}
+  \caption{}
+  \label{fig:umap_3sig_boxes}
+\end{subfigure}
+
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{recons_box_green}  
+  \caption{}
+  \label{fig:recons_green}
+\end{subfigure}
+\hspace{2em}
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{recons_box_magenta}  
+  \caption{}
+  \label{fig:recons_magenta}
+\end{subfigure}
+
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{recons_box_blue}  
+  \caption{}
+  \label{fig:recons_blue}
+\end{subfigure}
+\hspace{2em}
+\begin{subfigure}{.45\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{recons_box_red}  
+  \caption{}
+  \label{fig:recons_red}
+\end{subfigure}
+
+\vspace{0cm}
+\caption{A visualization of our anomaly characterization method with our WGAN-based anomaly scores and autoencoded residual images. Panel (a) shows a UMAP embedding of all anomalies with a score $>3\sigma$ above the mean, color coded by anomaly score. Panels (b)-(e) show a random selection of galaxies in each of UMAP regions enclosed by the box of the corresponding color in panel (a). It is clear that different regions of the UMAP correspond to different types of anomalies.}
+\label{fig:boxes}
+\end{figure*}
+
+
+\subsection{Correlation with HSC Catalog Information}
+
+We can compare the results of our anomaly detection process with metadata from the HSC catalog.
+This acts as a validation step to understand the information that our anomaly detection approach might be using to make its assignments, and determine if it is picking up on information beyond that in the catalog.
+Here we explore the relationship between anomaly score, the effective radius, and the blendedness of the object.
+One of the intents is to check that our method is not simply assigning high anomaly scores to all extended and highly blended objects, and low scores to all compact and isolated objects.
+
+We first look at the spatial extendedness of the object, measured by its effective radius $R_\mathrm{eff}$, which is computed from the moments of the flux fit.
+The anomaly score as a function of radius is shown in Figure \ref{fig:reff}, shown as a 2-dimensional histogram; the horizontal lines denote the mean anomaly score and standard deviations from the mean.
+We note that some objects were computed to have physically unrealistic radii, given the size of the cutouts ($15 \times 15$ arcsec), so these catalog values may not be entirely trustworthy.
+We see that there are several distinct populations in radii.
+There is a slight correlation with anomaly score, with objects with higher $R_\mathrm{eff}$ tending to be more anomalous.
+However, this effect isn't very strong; most high-$R_\mathrm{eff}$ objects fall below the $3\sigma$ anomaly cut, including most of the largest objects.
+There are also a significant number of low-$R_\mathrm{eff}$ objects that are assigned high anomaly scores.
+This suggests that the anomaly detector is able to recognize normal extended objects and anomalous compact objects, and is utilizing information beyond the spatial extent of the emission.
+
+We also look at the blendedness of the object, which describes the contamination of one object by the light from other close objects; this is shown in Figure \ref{fig:blend}.
+A blendedness of 0 indicates an isolated object, while a value near 1 indicates a very blended object.
+We see small trend in anomaly score with blendedness.
+The purple line at $10^{-0.375}$ at shows the cutoff suggested for eliminating extreme blends \citep{Mandelbaum2018}; 4.6\% of the objects in our sample are above this threshold, while 9.9\% of $3\sigma$ anomalies are above it. \KSF{TODO: double check these numbers}
+This indicates that our approach is flagging a higher proportion of blended objects as anomalous, so there is some connection between the information used by the WGAN and light contamination.
+This is expected, as highly blended objects are not well-represented in our sample and thus the WGAN will have a more difficult time reconstructing them.
+However, the fact that this is a relatively weak correlation indicates that the WGAN is able to determine that not all highly blended objects are very anomalous, and that many isolated objects are outliers in some way.
+
+This comparison validates our anomaly detection approach by showing that our framework is not just finding objects already marked as extreme by the catalog, in terms of spatial extent or blendedness.
+While it does flag a significant number of these objects as anomalies, it also finds compact, isolated objects to be outliers in some sense; these objects may have been missed by more targeted anomaly detection approaches.
+Finally, we note that this catalog information can be used not just as validation, but also as a tool for exploring and characterizing the anomalies.
+We use this information in our anomaly visualization tool in order to find such aforementioned objects that don't stand out along catalog property axes yet have high anomaly scores.
+
+\begin{figure*}
+    \begin{subfigure}{.49\textwidth}
+      \centering
+      \includegraphics[width=\columnwidth]{sanom-reff_gri_hexlog}  
+      \caption{}
+      \label{fig:reff}
+    \end{subfigure}
+    \begin{subfigure}{.49\textwidth}
+      \centering
+      \includegraphics[width=\columnwidth]{sanom-blendedness_gri_hexlog}
+      \caption{}
+      \label{fig:blend}
+    \end{subfigure}
+    \vspace{0cm}
+    \caption{The relationship between anomaly score and catalog properties. Panel (a) shows Effective radius $R_\mathrm{eff}$ of the objects as a function of anomaly score. Many compact objects ($R_\mathrm{eff}<\sim1$) are assigned high anomaly scores, in addition to a sizeable proportion of extended objects. The values of $R_\mathrm{eff} \gtrsim 20$ likely should not be trusted. Panel (b) shows the blendedness of the objects as a function of anomaly score. A value of 1 indicates a highly blended source, while 0 indicates an isolated source. The purple line is the threshold value for most science use cases. A higher proportion of blended objects have high scores, but many isolated objects are also anomalous. In both panels, the black solid lines show the mean anomaly score of the sample; the dashed lines show 1\sig, 2\sig and 3\sig away from the mean. There are 80 objects with scores greater than 4000 that are shown in the maximum score bin for this visualization.}
+    \label{fig:reff-blend}
+\end{figure*}
+
+
+\subsection{Identified Interesting Anomalies}
+\label{sec:interesting}
+
+Using our approach combining WGAN-based anomaly scores and CAE-enabled characterization, we find a number of potentially scientifically interesting galaxy images.
+A categorized selection of these is shown in Figure~\ref{fig:anomalies}.
+We detect several regions intense blue emission, some more diffuse and some in discrete clumps, which could indicate extreme star formation; these are shown in Figure~\ref{fig:anom_sf}.
+In Figure~\ref{fig:anom_tidal}, we show galaxy mergers as well as galaxies with tidal features. 
+Figure~\ref{fig:anom_bluecore} shows diffuse galactic structures that host compact blue sources.
+These may be Extremely Metal-Poor Galaxies (EMPGs), or Blue Compact Dwarfs (BCDs).
+We find several extended galaxies with discrete intensely purple regions, shown in Figure~\ref{fig:anom_purple}; these could be regions of star formation or other galactic activity.
+Finally, Figure~\ref{fig:anom_unknown} shows a few anomalous images that we are unable to identify, including arcs of extended emission, and a strangely shaped cluster of discrete sources.
+These demonstrate the potential of our approach to identify ``unknown unknowns,'' which a more targeted anomaly detection method would likely have missed.
+
+\begin{figure*}
+\vspace{0cm}
+\begin{subfigure}{.4\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_starforming}  
+  \caption{Galaxies with extreme, blue star formation.}
+  \label{fig:anom_sf}
+\end{subfigure}
+\hspace{2em}
+\begin{subfigure}{.4\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_tidalfeatures}  
+  \caption{Galaxy mergers and tidal features.}
+  \label{fig:anom_tidal}
+\end{subfigure}
+\vspace{1em}
+
+\begin{subfigure}{.4\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_bluecore}
+  \caption{Diffuse galaxies with bright blue compact sources.}
+  \label{fig:anom_bluecore}
+\end{subfigure}
+\hspace{2em}
+\begin{subfigure}{.4\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_purple}  
+  \caption{Galaxies with purple active regions.}
+  \label{fig:anom_purple}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}{.4\textwidth}
+  \centering
+  \includegraphics[width=1\linewidth]{anomalies_unknown}
+  \caption{Anomalies of unknown type.}
+  \label{fig:anom_unknown}
+\end{subfigure}
+\vspace{0cm}
+\caption{A selection of the interesting anomalies with scientific potential detected using our method.}
+\label{fig:anomalies}
+\end{figure*}
+
+We perform follow-up spectroscopic observations of several of these objects to determine if they are indeed scientifically interesting.
+We use the Keck telescope to obtain a spectrum of the object in the top left image of Figure~\ref{fig:anom_bluecore}.
+We find that...
+\KSF{TODO: write this section if we decide to include!}
+
+\section{Summary \& Conclusions}
+\label{sec:conclusions}
+
+%Summary
+We searched for anomalous objects in a sample of $\sim$940,000 Hyper Suprime-Cam images.
+We used a generative adversarial network (GAN) to build a generative model of our data space.
+This allowed us to identify images that are poorly represented by the model and thus more anomalous with respect to the rest of the data.
+
+In this work, we have shown that generative adversarial networks are a promising approach for anomaly detection in astronomical imaging.
+We propose an approach that uses a Wasserstein generative adversarial network (WGAN) to model the distribution of the data.
+Data that is not well represented in the WGAN's latent space is taken to be more anomalous with respect to the data set as a whole.
+This is quantified by having the WGAN attempt to reconstruct each object, and computing the residual between the original and the reconstruction.
+We also compute the residual between the penultimate layer of the WGAN discriminator for the real image and the reconstruction, which also contains information about how much the object is an outlier.
+We combine these into a single anomaly score for each object.
+
+One of the difficulties with anomaly detection is determining which anomalies are actually scientifically interesting.
+To address this, we augment our WGAN-based anomaly detection approach with a novel characterization method based on convolutional autoencoders (CAEs).
+We use the CAE to reduce the dimensionality of the residual images, and use these lower-dimensional representations to further cluster objects with high anomaly scores.
+
+We applied our method to $\sim$940,000 images of galaxies from the Hyper Suprime-Cam.
+Using our approach, we identify numerous interesting anomalies with scientific potential, including galaxy mergers and galaxies with extreme star-forming regions; we perform follow-up observations on some of these objects and confirm their scientific interest.
+We have publicly released a catalog of our full data set with our WGAN-assigned anomaly scores, with flags for objects we have already identified as interesting, together with our custom visualization tool for further exploring this data. 
+Our approach is flexible and can be applied to other data sets and data types.
+The combination of the WGAN and CAE for unsupervised anomaly detection is scalable, reproducible, and removes spontaneity from the discovery process, making it ideal for extracting novel science from the increasingly large surveys of the coming decade.
+
+
+\section*{Acknowledgements}
+
+We gratefully acknowledge the Kavli Summer Program in Astrophysics for seeding this project; the initial work was completed at the 2019 program at the University of California, Santa Cruz.
+This work was funded by the Kavli Foundation, the National Science Foundation, and UC Santa Cruz.
+KSF thanks Dezso Ribli, Lorenzo Zanisi, Itamar Reis, and the Flatiron Astrodata Group at the Center for Computational Astrophysics for helpful discussions.
+KSF, AL and YL are grateful for valuable insights on the interpretation of galaxy observations from Jenny Greene, Erin Kado-Fong, Kevin Bundy, Xavier Prochaska, Masami Ouchi, Kimihiko Nakajima, Yuki Isobe, Yi Xu, and Aaron Romanowsky.
+
+
+\bibliographystyle{mnras}
+\bibliography{Anomalies-HSC}
+
+\appendix
+\section{Catalog Query}
+\label{sec:query}
+
+We reproduce the SQL query used to select our data sample in the HSC catalog.
+This includes the cuts, in magnitude and on flags, as well as information about the images and objects.
+The query can be run through the HSC data access site at \texttt{https://hsc-release.mtk.nao.ac.jp/datasearch/}.
+
+\begin{lstlisting}[
+           language=SQL,
+           showspaces=false,
+           basicstyle=\ttfamily,
+           numbers=left,
+           numberstyle=\tiny,
+           commentstyle=\color{gray},
+           breaklines=true
+        ]
+SELECT
+    -- Basic information
+    f1.object_id, f1.ra, f1.dec, f1.tract, f1.patch, f1.parent_id,
+    
+    -- Galactic extinction
+    f1.a_g, f1.a_r, f1.a_i, f1.a_z, f1.a_y,
+    
+    --- cmodel
+    ---- Total
+    f1.g_cmodel_mag, f1.r_cmodel_mag, f1.i_cmodel_mag, f1.z_cmodel_mag, f1.y_cmodel_mag,
+    f1.g_cmodel_magsigma, f1.r_cmodel_magsigma, f1.i_cmodel_magsigma, f1.z_cmodel_magsigma, f1.y_cmodel_magsigma,
+
+    ---- fracDev
+    f1.g_cmodel_fracdev, f1.r_cmodel_fracdev, f1.i_cmodel_fracdev, f1.z_cmodel_fracdev, f1.y_cmodel_fracdev,
+
+    ---- flag
+    f1.g_cmodel_flag, f1.r_cmodel_flag, f1.i_cmodel_flag, f1.z_cmodel_flag, f1.y_cmodel_flag,
+
+    --- PSF
+    f2.g_psfflux_mag, f2.r_psfflux_mag, f2.i_psfflux_mag, f2.z_psfflux_mag, f2.y_psfflux_mag,
+    f2.g_psfflux_magsigma, f2.r_psfflux_magsigma, f2.i_psfflux_magsigma, f2.z_psfflux_magsigma, f2.y_psfflux_magsigma,
+
+    ---- flag
+    f2.g_psfflux_flag, f2.r_psfflux_flag, f2.i_psfflux_flag, f2.z_psfflux_flag, f2.y_psfflux_flag,
+
+    -- Flags
+    ---- pixel edge
+    f1.g_pixelflags_edge, f1.r_pixelflags_edge, f1.i_pixelflags_edge, f1.z_pixelflags_edge, f1.y_pixelflags_edge,
+
+    ---- pixel interpolated
+    f1.g_pixelflags_interpolated, f1.r_pixelflags_interpolated, f1.i_pixelflags_interpolated, f1.z_pixelflags_interpolated,
+    f1.y_pixelflags_interpolated,
+
+    ---- pixel saturated
+    f1.g_pixelflags_saturated, f1.r_pixelflags_saturated, f1.i_pixelflags_saturated, f1.z_pixelflags_saturated,
+    f1.y_pixelflags_saturated,
+
+    ---- pixel cr
+    f1.g_pixelflags_cr, f1.r_pixelflags_cr, f1.i_pixelflags_cr, f1.z_pixelflags_cr, f1.y_pixelflags_cr,
+
+    ---- pixel clipped
+    f1.g_pixelflags_clipped, f1.r_pixelflags_clipped, f1.i_pixelflags_clipped, f1.z_pixelflags_clipped,
+    f1.y_pixelflags_clipped,
+
+    ---- pixel reject
+    f1.g_pixelflags_rejected, f1.r_pixelflags_rejected, f1.i_pixelflags_rejected, f1.z_pixelflags_rejected,
+    f1.y_pixelflags_rejected,
+
+    ---- pixel inexact psf
+    f1.g_pixelflags_inexact_psf, f1.r_pixelflags_inexact_psf, f1.i_pixelflags_inexact_psf,
+    f1.z_pixelflags_inexact_psf, f1.y_pixelflags_inexact_psf,
+    
+    ---- pixel interpolated center
+    f1.g_pixelflags_interpolatedcenter, f1.r_pixelflags_interpolatedcenter, f1.i_pixelflags_interpolatedcenter,
+    f1.z_pixelflags_interpolatedcenter, f1.y_pixelflags_interpolatedcenter,
+
+    ---- pixel saturated center
+    f1.g_pixelflags_saturatedcenter, f1.r_pixelflags_saturatedcenter, f1.i_pixelflags_saturatedcenter, f1.z_pixelflags_saturatedcenter,
+    f1.y_pixelflags_saturatedcenter,
+
+    ---- pixel cr center
+    f1.g_pixelflags_crcenter, f1.r_pixelflags_crcenter, f1.i_pixelflags_crcenter, f1.z_pixelflags_crcenter, f1.y_pixelflags_crcenter,
+
+    ---- pixel clipped center
+    f1.g_pixelflags_clippedcenter, f1.r_pixelflags_clippedcenter, f1.i_pixelflags_clippedcenter, f1.z_pixelflags_clippedcenter,
+    f1.y_pixelflags_clippedcenter,
+
+    ---- pixel reject center
+    f1.g_pixelflags_rejectedcenter, f1.r_pixelflags_rejectedcenter, f1.i_pixelflags_rejectedcenter, f1.z_pixelflags_rejectedcenter,
+    f1.y_pixelflags_rejectedcenter,
+
+    ---- pixel inexact psf center
+    f1.g_pixelflags_inexact_psfcenter, f1.r_pixelflags_inexact_psfcenter, f1.i_pixelflags_inexact_psfcenter,
+    f1.z_pixelflags_inexact_psfcenter, f1.y_pixelflags_inexact_psfcenter,
+
+    ---- pixel bright object
+    f1.g_pixelflags_bright_object, f1.r_pixelflags_bright_object, f1.i_pixelflags_bright_object,
+    f1.z_pixelflags_bright_object, f1.y_pixelflags_bright_object,
+
+    ---- pixel bright object center
+    f1.g_pixelflags_bright_objectcenter, f1.r_pixelflags_bright_objectcenter, f1.i_pixelflags_bright_objectcenter,
+    f1.z_pixelflags_bright_objectcenter, f1.y_pixelflags_bright_objectcenter,
+
+	-- Measured information
+	---- blendedness
+	m.g_blendedness_abs_flux, m.g_blendedness_flag,
+	m.r_blendedness_abs_flux, m.r_blendedness_flag,
+	m.i_blendedness_abs_flux, m.i_blendedness_flag, 
+	m.z_blendedness_abs_flux, m.z_blendedness_flag, 
+	m.y_blendedness_abs_flux, m.y_blendedness_flag, 
+	
+	---- Shape of the CModel model
+	m.i_cmodel_exp_ellipse_11, m.i_cmodel_exp_ellipse_22, m.i_cmodel_exp_ellipse_12,
+	m.i_cmodel_dev_ellipse_11, m.i_cmodel_dev_ellipse_22, m.i_cmodel_dev_ellipse_12,
+	m.i_cmodel_ellipse_11, m.i_cmodel_ellipse_22, m.i_cmodel_ellipse_12,
+	m.r_cmodel_exp_ellipse_11, m.r_cmodel_exp_ellipse_22, m.r_cmodel_exp_ellipse_12,
+	m.r_cmodel_dev_ellipse_11, m.r_cmodel_dev_ellipse_22, m.r_cmodel_dev_ellipse_12,
+	m.r_cmodel_ellipse_11, m.r_cmodel_ellipse_22, m.r_cmodel_ellipse_12
+
+    -- Meta information
+    ---- input count
+    f1.g_inputcount_value, f1.r_inputcount_value, f1.i_inputcount_value, f1.z_inputcount_value, f1.y_inputcount_value,
+
+    ---- extendedness
+    f1.g_extendedness_value, f1.r_extendedness_value, f1.i_extendedness_value, f1.z_extendedness_value, f1.y_extendedness_value,
+    f1.g_extendedness_flag, f1.r_extendedness_flag, f1.i_extendedness_flag, f1.z_extendedness_flag, f1.y_extendedness_flag,
+
+    ---- background
+    f1.g_localbackground_flux, f1.r_localbackground_flux, f1.i_localbackground_flux,
+    f1.z_localbackground_flux, f1.y_localbackground_flux
+		
+FROM
+	pdr2_wide.forced AS f1
+	LEFT JOIN pdr2_wide.forced2 AS f2 USING (object_id)
+	LEFT JOIN pdr2_wide.meas AS m USING (object_id)
+
+WHERE
+	
+-- Select only primary targets
+f1.isprimary = True
+AND f1.nchild = 0
+
+-- Rough FDFC cuts
+AND f1.g_inputcount_value >= 3
+AND f1.r_inputcount_value >= 3
+AND f1.i_inputcount_value >= 3
+AND f1.z_inputcount_value >= 3
+AND f1.y_inputcount_value >= 3
+
+-- Cuts on bright objects
+AND NOT f1.g_pixelflags_bright_objectcenter
+AND NOT f1.r_pixelflags_bright_objectcenter
+AND NOT f1.i_pixelflags_bright_objectcenter
+AND NOT f1.z_pixelflags_bright_objectcenter
+AND NOT f1.y_pixelflags_bright_objectcenter
+
+AND NOT f1.g_pixelflags_bright_object
+AND NOT f1.r_pixelflags_bright_object
+AND NOT f1.i_pixelflags_bright_object
+AND NOT f1.z_pixelflags_bright_object
+AND NOT f1.y_pixelflags_bright_object
+
+-- Cuts on bad flags
+AND NOT f1.g_pixelflags_edge
+AND NOT f1.r_pixelflags_edge
+AND NOT f1.i_pixelflags_edge
+AND NOT f1.z_pixelflags_edge
+AND NOT f1.y_pixelflags_edge
+
+AND NOT f1.g_pixelflags_saturatedcenter
+AND NOT f1.r_pixelflags_saturatedcenter
+AND NOT f1.i_pixelflags_saturatedcenter
+AND NOT f1.z_pixelflags_saturatedcenter
+AND NOT f1.y_pixelflags_saturatedcenter
+
+AND NOT f1.g_cmodel_flag
+AND NOT f1.r_cmodel_flag
+AND NOT f1.i_cmodel_flag
+AND NOT f1.z_cmodel_flag
+AND NOT f1.y_cmodel_flag
+
+AND NOT f1.g_pixelflags_interpolatedcenter
+AND NOT f1.r_pixelflags_interpolatedcenter
+AND NOT f1.i_pixelflags_interpolatedcenter
+AND NOT f1.z_pixelflags_interpolatedcenter
+AND NOT f1.y_pixelflags_interpolatedcenter
+
+AND NOT f1.g_pixelflags_crcenter
+AND NOT f1.r_pixelflags_crcenter
+AND NOT f1.i_pixelflags_crcenter
+AND NOT f1.z_pixelflags_crcenter
+AND NOT f1.y_pixelflags_crcenter
+
+-- CModel magnitude limited
+AND f1.i_cmodel_mag < 20.5 
+AND f1.i_cmodel_mag >= 20.0
+\end{lstlisting}
+
+\end{document}
+
+

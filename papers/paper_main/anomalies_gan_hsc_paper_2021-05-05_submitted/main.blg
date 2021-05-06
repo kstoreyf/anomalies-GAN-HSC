@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99d (TeX Live 2019)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: main.aux
+The style file: mnras.bst
+Database file #1: Anomalies-HSC.bib
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Warning--empty institution in Chalapathy2019
+Warning--empty institution in DiMattia2019
+"ArXiv e-prints" is a string literal, `journal' is a missing field
+---they aren't the same literal types for entry Lochner2020
+while executing---line 1822 of file mnras.bst
+Warning--empty journal in Lochner2020
+"ArXiv e-prints" is a string literal, `journal' is a missing field
+---they aren't the same literal types for entry Lochner2020
+while executing---line 1822 of file mnras.bst
+You've used 49 entries,
+            2881 wiz_defined-function locations,
+            1127 strings with 37423 characters,
+and the built_in function-call counts, 24250 in all, are:
+= -- 1945
+> -- 1796
+< -- 84
++ -- 770
+- -- 286
+* -- 2882
+:= -- 3771
+add.period$ -- 0
+call.type$ -- 49
+change.case$ -- 100
+chr.to.int$ -- 47
+cite$ -- 52
+duplicate$ -- 1203
+empty$ -- 1268
+format.name$ -- 436
+if$ -- 4299
+int.to.chr$ -- 3
+int.to.str$ -- 0
+missing$ -- 49
+newline$ -- 164
+num.names$ -- 326
+pop$ -- 282
+preamble$ -- 1
+purify$ -- 196
+quote$ -- 0
+skip$ -- 742
+stack$ -- 0
+substring$ -- 1404
+swap$ -- 592
+text.length$ -- 202
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 435
+warning$ -- 3
+while$ -- 352
+width$ -- 0
+write$ -- 511
+(There were 2 error messages)

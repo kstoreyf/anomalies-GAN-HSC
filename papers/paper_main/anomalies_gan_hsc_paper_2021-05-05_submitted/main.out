@@ -1,0 +1,18 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Data}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Hyper Suprime-Cam Survey}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{Selection of Sample}{section.2}% 4
+\BOOKMARK [1][-]{section.3}{Model and Training}{}% 5
+\BOOKMARK [2][-]{subsection.3.1}{WGAN Architecture and Training}{section.3}% 6
+\BOOKMARK [2][-]{subsection.3.2}{Anomaly Score Assignment}{section.3}% 7
+\BOOKMARK [2][-]{subsection.3.3}{Dimensionality Reduction with a Convolutional Autoencoder}{section.3}% 8
+\BOOKMARK [1][-]{section.4}{Results}{}% 9
+\BOOKMARK [2][-]{subsection.4.1}{Anomaly Score Distribution and High-Anomaly Sample Selection}{section.4}% 10
+\BOOKMARK [2][-]{subsection.4.2}{Correlation with HSC Catalog Information}{section.4}% 11
+\BOOKMARK [2][-]{subsection.4.3}{Autoencoder Results Visualized with UMAP Embedding}{section.4}% 12
+\BOOKMARK [2][-]{subsection.4.4}{Characterization of Anomalies with the WGAN, CAE, and UMAP}{section.4}% 13
+\BOOKMARK [2][-]{subsection.4.5}{Identified Interesting Anomalies}{section.4}% 14
+\BOOKMARK [1][-]{section.5}{Follow-up Analysis of A WGAN-Detected Anomalous Galaxy}{}% 15
+\BOOKMARK [2][-]{subsection.5.1}{Source properties}{section.5}% 16
+\BOOKMARK [2][-]{subsection.5.2}{Spectroscopic analysis of source}{section.5}% 17
+\BOOKMARK [1][-]{section.6}{Summary \046 Conclusions}{}% 18
