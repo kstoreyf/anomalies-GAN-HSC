@@ -1,11 +1,11 @@
 # *********************************************************************************
-# * File Name : wganrgb.py
+# * File Name : wgan_rgb.py
 # * Creation Date : 2019-08-12
 # * Created By : kstoreyf
 # * Description : Implemtation of a WGAN-GP to generate 
 # *     images from 96x96 galaxy cutouts, in 3 bands. Based on
 # *     https://github.com/igul222/improved_wgan_training/blob/master/gan_mnist.py.
-# *     Only tested on wgan-gp mode. Uses tensorflow-hub for saving models.
+# *     Uses tensorflow-hub for saving models.
 # *********************************************************************************
 
 import os, sys
@@ -30,32 +30,26 @@ import tflib.mnist
 import tflib.plot
 import tflib.datautils
 
-#np.set_printoptions(threshold=sys.maxsize)
-
-MODE = 'wgan-gp' # dcgan, wgan, or wgan-gp
+# Parameter settings
 DIM = 64 # Model dimensionality
 BATCH_SIZE = 32 # Batch size
-CRITIC_ITERS = 5 # For WGAN and WGAN-GP, number of critic iters per gen iter
+CRITIC_ITERS = 5 # Number of critic iters per gen iter
 LAMBDA = 10 # Gradient penalty lambda hyperparameter
 ITERS = 50000 # How many generator iterations to train for
 SAMPLE_ITERS = 100 # Multiples at which to generate image sample
 SAVE_ITERS = 500
 NSIDE = 96 # Don't change this without changing the model layers!
 NBANDS = 3
-OUTPUT_DIM = NSIDE*NSIDE*NBANDS # Number of pixels in MNIST (28*28)
+OUTPUT_DIM = NSIDE*NSIDE*NBANDS # Total umber of pixels
 batchnorm = False
-
 tag = 'gri'
-imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
-#tag = 'i20.0_norm'
-#imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_np/imarr_{tag}.npy'
 
+imarr_fn = f'/scratch/ksf293/kavli/anomaly/data/images_h5/images_{tag}.h5'
 out_dir = f'/scratch/ksf293/kavli/anomaly/training_output/out_{tag}_save/'
 if not os.path.exists(out_dir):
     os.makedirs(out_dir)
 
 lib.print_model_settings(locals().copy())
-
 
 def LeakyReLU(x, alpha=0.2):
     return tf.maximum(alpha*x, x)
@@ -114,7 +108,6 @@ def Generator_module():
     output = lib.ops.deconv2d.Deconv2D('Generator.5', DIM, NBANDS, 5, output)
     
     output = tf.nn.sigmoid(output)
-    #output = tf.tanh(output)
 
     output = tf.reshape(output, [-1, OUTPUT_DIM])
     
@@ -154,9 +147,8 @@ def Discriminator_module():
     hub.add_signature(inputs=inputs, outputs=output)
     return output
 
-
+# Set up model
 print("Setting up models")
-
 real_data = tf.placeholder(tf.float32, shape=[BATCH_SIZE, OUTPUT_DIM])
 generator_spec = hub.create_module_spec(Generator_module)
 Generator = hub.Module(generator_spec, name='Generator', trainable=True)
@@ -173,95 +165,42 @@ disc_fake = Discriminator(fake_data)
 gen_params = [v for v in tf.trainable_variables() if 'Generator' in v.name]
 disc_params = [v for v in tf.trainable_variables() if 'Discriminator' in v.name]
 
-if MODE == 'wgan':
-    gen_cost = -tf.reduce_mean(disc_fake)
-    disc_cost = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
+# Run WGAN-GP
+gen_cost = -tf.reduce_mean(disc_fake)
+disc_cost = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
 
-    gen_train_op = tf.train.RMSPropOptimizer(
-        learning_rate=5e-5
-    ).minimize(gen_cost, var_list=gen_params)
-    disc_train_op = tf.train.RMSPropOptimizer(
-        learning_rate=5e-5
-    ).minimize(disc_cost, var_list=disc_params)
+alpha = tf.random_uniform(
+    shape=[BATCH_SIZE,1],
+    minval=0.,
+    maxval=1.
+)
+differences = fake_data - real_data
+interpolates = real_data + (alpha*differences)
+gradients = tf.gradients(Discriminator(interpolates), [interpolates])[0]
+slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
+gradient_penalty = tf.reduce_mean((slopes-1.)**2)
+disc_cost += LAMBDA*gradient_penalty
 
-    clip_ops = []
-    for var in lib.params_with_name('Discriminator'):
-        clip_bounds = [-.01, .01]
-        clip_ops.append(
-            tf.assign(
-                var,
-                tf.clip_by_value(var, clip_bounds[0], clip_bounds[1])
-            )
-        )
-    clip_disc_weights = tf.group(*clip_ops)
+gen_train_op = tf.train.AdamOptimizer(
+    learning_rate=1e-4, #1e-4,
+    beta1=0.5,
+    beta2=0.9
+).minimize(gen_cost, var_list=gen_params)
+disc_train_op = tf.train.AdamOptimizer(
+    learning_rate=1e-4, #1e-4,
+    beta1=0.5,
+    beta2=0.9
+).minimize(disc_cost, var_list=disc_params)
 
-elif MODE == 'wgan-gp':
-    gen_cost = -tf.reduce_mean(disc_fake)
-    disc_cost = tf.reduce_mean(disc_fake) - tf.reduce_mean(disc_real)
+clip_disc_weights = None
 
-    alpha = tf.random_uniform(
-        shape=[BATCH_SIZE,1],
-        minval=0.,
-        maxval=1.
-    )
-    differences = fake_data - real_data
-    interpolates = real_data + (alpha*differences)
-    gradients = tf.gradients(Discriminator(interpolates), [interpolates])[0]
-    slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=[1]))
-    gradient_penalty = tf.reduce_mean((slopes-1.)**2)
-    disc_cost += LAMBDA*gradient_penalty
-    
-    gen_train_op = tf.train.AdamOptimizer(
-        learning_rate=1e-4, #1e-4,
-        beta1=0.5,
-        beta2=0.9
-    ).minimize(gen_cost, var_list=gen_params)
-    disc_train_op = tf.train.AdamOptimizer(
-        learning_rate=1e-4, #1e-4,
-        beta1=0.5,
-        beta2=0.9
-    ).minimize(disc_cost, var_list=disc_params)
-
-    clip_disc_weights = None
-
-elif MODE == 'dcgan':
-    gen_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-        disc_fake,
-        tf.ones_like(disc_fake)
-    ))
-
-    disc_cost =  tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-        disc_fake,
-        tf.zeros_like(disc_fake)
-    ))
-    disc_cost += tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-        disc_real,
-        tf.ones_like(disc_real)
-    ))
-    disc_cost /= 2.
-
-    gen_train_op = tf.train.AdamOptimizer(
-        learning_rate=2e-4,
-        beta1=0.5
-    ).minimize(gen_cost, var_list=gen_params)
-    disc_train_op = tf.train.AdamOptimizer(
-        learning_rate=2e-4,
-        beta1=0.5
-    ).minimize(disc_cost, var_list=disc_params)
-
-    clip_disc_weights = None
 
 # For saving samples
 fixed_noise = tf.constant(np.random.normal(size=(128, 128)).astype('float32'))
 fixed_noise_samples = Generator(fixed_noise)
 def generate_image(frame):
     samples = session.run(fixed_noise_samples)
-    #print(samples[0][0])
-    #samples = (0.5*(samples+1.))
-    #print(samples[0][0])
     samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,2,3,1) #0321 also works
-    #samples = samples.reshape((128, NBANDS, NSIDE, NSIDE)).transpose(0,1,3,2)
-    #print(samples[0])
     lib.save_images.save_images(
         samples, out_dir+'samples_{}.png'.format(frame), unnormalize=True
     )
@@ -275,12 +214,10 @@ print("Writing real sample")
 sample_real, _ = train_gen.sample(128)
 sample_real = sample_real.reshape((128, NBANDS, NSIDE, NSIDE))
 sample_real = sample_real.transpose(0,2,3,1)
-#sample_real = sample_real.reshape((128, NSIDE, NSIDE, NBANDS))
 lib.save_images.save_images(sample_real, out_dir+'real.png', unnormalize=True)
-#print(sample_real[0])
 
+# Training loop
 print("Training")
-# Train loop
 with tf.Session() as session:
 
     session.run(tf.global_variables_initializer())
@@ -294,15 +231,9 @@ with tf.Session() as session:
                 [gen_cost, gen_train_op],
                 feed_dict={noise: _noise})
 
-        if MODE == 'dcgan':
-            disc_iters = 1
-        else:
-            disc_iters = CRITIC_ITERS
+        disc_iters = CRITIC_ITERS
         for i in range(disc_iters):
             _data, _ = train_gen.next()
-            #print(_data.shape)
-            #print((_data[0][int(OUTPUT_DIM/2-24):int(OUTPUT_DIM/2+24)]*255.).astype('uint8'))
-            #print(_data[0][40:-40,40:-40])
             _noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
             
             _disc_cost, _ = session.run(
