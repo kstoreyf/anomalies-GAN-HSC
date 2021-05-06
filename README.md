@@ -1,7 +1,7 @@
 # anomalies-GAN-HSC
 
 In this work, we trained a Wasserstein generative adversarial network (WGAN) to detect anomalous galaxy images in the Hyper Suprime-Cam (HSC) survey.
-Check out our short [paper](https://arxiv.org/abs/2012.08082) at the 2020 NeurIPS Machine Learning for Physical Sciences workshop; full paper coming soon.
+Check out our short [paper](https://arxiv.org/abs/2012.08082) at the 2020 NeurIPS Machine Learning for Physical Sciences workshop, and our full paper submitted to MNRAS (on the arXiV soon).
 You can explore our anomalous object sample and find more interesting galaxies at [https://weirdgalaxi.es](https://weirdgalaxi.es).
 For any questions or feedback, open an [issue](https://github.com/kstoreyf/anomalies-GAN-HSC/issues) or email [k.sf@nyu.edu](mailto:k.sf@nyu.edu).
 
@@ -16,17 +16,17 @@ Further, the discriminator is trained to distinguish between real and fake (gene
 We trained our WGAN on nearly 1 million galaxy images from the HSC survey.
 The use of the Wasserstein distance, combined with a gradient penalty, stabilizes the training to avoid the failure modes that make GANs infamous.
 We set our trained WGAN to generate its best reconstruction of each image from its latent space using a straightforward optimization.
-Based on this reconstruction, we assigned each image an anomaly score.
-We found that around 9,000 objects score higher than 3-sigma above the mean, and we took these to be our anomalous object sample.
+Based on the pixel values of this reconstruction by the generator and the features extracted by the discriminator, we assigned each image an anomaly score.
+We found that the discriminator selects for more scientifically interesting anomalies, while the generator is adept at finding optical artifacts and noise.
+We use the discriminator score to select a high anomaly sample of ~13,000 objects with score higher than 3-sigma above the mean.
 
-The challenge with anomaly detection in astrophysics is to identify *interesting* anomalies; many of the high-scoring images identified by our WGAN were in fact pipeline errors or noisy observations.
+The challenge with anomaly detection in astrophysics is to identify *interesting* anomalies; many of the high-scoring images identified by our WGAN were in fact optical artifacts or noisy observations, even among those selected by the discriminator.
 To characterize our anomalies, we trained a convolutional autoencoder (CAE) to reduce the dimensionality of the residual images between the real image and the WGAN reconstruction.
 This allowed us to isolate the information relevant to the anomalousness of the images, and perform clustering via a UMAP embedding (similar to T-SNE).
-We used this approach to identify many objects of scientific interest, including galaxy mergers, tidal disruption features, and galaxies with extreme star formation.
-We performed follow-up observations of several of these objects to confirm their scientific interest; we found one particularly interesting object, a metal-poor dwarf galaxy with potential gaseous outflows!
-Keep an eye out for our paper with details on this exciting find.
+We used this approach to identify many anomalous objects of scientific interest, including galaxy mergers, tidal disruption features, and galaxies with extreme star formation.
+We performed follow-up observations of several of these objects to confirm their scientific interest; we found one particularly interesting object, which we conclude is likely metal-poor dwarf galaxy with a nearby extremely blue, enriched HII region.
 
-Our WGAN-CAE-UMAP approach is flexible and scalable, and we hope that it will spur novel discoveries in our increasingly large astronomical surveys.
+Our WGAN-CAE-UMAP approach is flexible and scalable, and we hope that it will spur novel discoveries in the increasingly large astronomical surveys of the coming years.
 
 ## Authors
 
@@ -37,4 +37,5 @@ Our WGAN-CAE-UMAP approach is flexible and scalable, and we hope that it will sp
 - [Francois Lanusse](https://github.com/EiffL)
 - [Yifei Luo](https://github.com/yluo54301)
 - [Song Huang](https://github.com/dr-guangtou)
+- [J. Xavier Prochaska](https://github.com/profxj)
 
