@@ -15,15 +15,15 @@ import tarfile
 
 def main():
 
-    tag = 'gri_lambda0.3_3sigdisc'
-    savetag = '_3sigmadiscfilter'
+    #tag = 'gri_lambda0.3_3sigd'
+    #savetag = '_disc3sigma'
     #tag = 'gri_lambda0.3_1.5sigdisc'
     #tag = 'gri_lambda0.3_control'
-    #tag = 'gri_lambda0.3'
-    #savetag = ''
+    tag = 'gri_lambda0.3'
+    savetag = '_full'
 
     base_dir = '/scratch/ksf293/anomalies'
-    save_fn = f'{base_dir}/results/anomaly_catalogs/anomaly_catalog_hsc{savetag}.csv'
+    save_fn = f'{base_dir}/results/anomaly_catalogs/anomaly_catalog_hsc{savetag}'
 
     print(f"Loading and results with tag {tag}")
     results_fn = f'{base_dir}/results/results_{tag}.h5'
@@ -73,7 +73,8 @@ def write_anomaly_catalog(results_fn, info_fn, save_fn):
     combined_df.sort_index(inplace=True)
     print(combined_df)
 
-    combined_df.to_csv(save_fn)
+    combined_df.to_csv(f'{save_fn}.csv')
+    combined_df.to_pickle(f'{save_fn}.p')
     print("Anomaly catalog  written!")
 
 if __name__=='__main__':
