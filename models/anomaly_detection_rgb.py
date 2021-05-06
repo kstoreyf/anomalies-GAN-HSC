@@ -30,7 +30,7 @@ import tflib.mnist
 import tflib.plot
 import tflib.datautils
 
-
+# General arameters
 DIM = 64
 NSIDE = 96
 NBANDS = 3
@@ -44,6 +44,7 @@ lambda_weight = 0.3
 savetag = f'_lambda{lambda_weight}'
 startcount = 0
 
+# Generator and discriminator parameters
 gentag = 'gri_save'
 gennum = 10000
 gen_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{gentag}/model-gen-{gennum}'
@@ -52,12 +53,14 @@ disctag = gentag
 discnum = gennum
 disc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/wgan_{disctag}/model-disc-{discnum}'
 
+# Encoder parameters (for initial first guess)
 enctag = f'gri_lambda{lambda_weight}'
 encnum = 5000
 enc_fn = f'/scratch/ksf293/kavli/anomaly/training_output/encoder_{enctag}/model-encoder-{encnum}'
 
 result_fn = f'/scratch/ksf293/kavli/anomaly/results/results_{tag}{savetag}.h5'
 
+# Running detector
 print(f"Running anomaly detection for {tag} with generator {gentag}")
 
 print("Loading trained models")
@@ -65,44 +68,34 @@ Generator = hub.Module(gen_fn)
 Discriminator = hub.Module(disc_fn)
 Encoder = hub.Module(enc_fn)
 print("Loaded")
+
 print("Setting up model")
-
 real = tf.placeholder(tf.float32, shape=[None, OUTPUT_DIM])
-
 noise = np.random.normal(size=(BATCH_SIZE, 128)).astype('float32')
 z = tf.get_variable(name='ano_z', initializer=noise, validate_shape=False)
-
 z_plhdr = tf.placeholder(tf.float32)
 z_ass = z.assign(z_plhdr)
-
 reconstructed = Generator(z)
 
-print(Discriminator(real, signature='feature_match'))
-print(Discriminator(reconstructed, signature='feature_match'))
-#disc_residual = tf.subtract(
-#                    Discriminator(real, signature='feature_match'),
-#                    Discriminator(reconstructed, signature='feature_match')
-#                    )
-#print(disc_residual)
+# Compute residuals, anomaly score
 feature_residual = tf.reduce_sum(tf.abs(tf.subtract(
                     Discriminator(real, signature='feature_match'),
                     Discriminator(reconstructed, signature='feature_match')
                     )), axis=[1,2,3]) 
-
 residual = tf.reduce_sum(tf.abs(tf.subtract(real, reconstructed)), axis=1)
-
 anomaly_score = (1-lambda_weight)*residual + lambda_weight*feature_residual
 
+# Optimize
 t_vars = tf.trainable_variables()
 params = [var for var in t_vars if 'ano_z' in var.name]
-
 optimizer = tf.train.AdamOptimizer(
         learning_rate=1e-1, #1e-4,
         beta1=0.4,
         beta2=0.9
     ).minimize(anomaly_score, var_list=params)
 
-
+# If result file doesn't yet exist, create new h5 datasets.
+# If it does, figure out where to start adding.
 if not os.path.isfile(result_fn):
     print(f"Making new result file at {result_fn}")
     fres = h5py.File(result_fn,"w")
@@ -121,7 +114,7 @@ else:
     fres.close()
     print(f"Loaded result file at {result_fn}, count = {count}")
 
-
+# Set up data generator
 print("Loading data")
 data = lib.datautils.load(imarr_fn, dataset='images')
 print("data")
@@ -132,7 +125,6 @@ print("object_ids")
 indices_now = np.arange(data.len())
 print("Initializing generator")
 data_gen = lib.datautils.DataGenerator(data, y=indices_now, batch_size=BATCH_SIZE, luptonize=True, shuffle=False, starti=count, once=True)
-
 print(f'Num to detect: {len(data)}')
 
 def resize_datasets(f, addsize):
@@ -141,7 +133,7 @@ def resize_datasets(f, addsize):
     for dataset in datasets:
         f[dataset].resize(f[dataset].shape[0]+addsize, axis=0)
 
-    
+# Run detection loop
 start = time.time()
 moredata = True
 nbatches = 0
@@ -168,7 +160,7 @@ while moredata:
         _zinit_tensor = Encoder(_images)
         _zinit = sess.run(_zinit_tensor)
         
-        #pad
+        # Add padding
         if nimages<BATCH_SIZE:
             _zinit_padded = np.zeros((BATCH_SIZE, 128))
             _zinit_padded[:nimages] = _zinit
