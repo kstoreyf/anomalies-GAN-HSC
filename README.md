@@ -31,16 +31,16 @@ Our WGAN-CAE-UMAP approach is flexible and scalable, and we hope that it will sp
 ## Data access
 
 All of the data used in this work are publicly available.
-A notebook demonstrating the data access and use is at https://github.com/kstoreyf/anomalies-GAN-HSC/blob/master/notebooks/anomaly_catalog_demo.ipynb.
+The notebook [`anomaly_catalog_demo.ipynb`](https://github.com/kstoreyf/anomalies-GAN-HSC/blob/master/notebooks/anomaly_catalog_demo.ipynb) demonstrates the data access and use.
 The data files are also described below.
 
 We have provided derived catalogs of the objects in our data set and their anomaly scores as pickle files.
-These are available in this repo in the [`anomaly_catalogs`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs) subfolder, and include the full catalog ([`anomaly_catalog_hsc_full.p`]((https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/anomaly_catalog_hsc_full.p)) as well as the high-anomaly catalog used in the paper ([`anomaly_catalog_hsc_disc3sig.p`]((https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/anomaly_catalog_hsc_disc3sig.p)).
+These are available in this repo in the [`anomaly_catalogs`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs) subfolder, and include the full catalog ([`anomaly_catalog_hsc_full.p`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/anomaly_catalog_hsc_full.p)) as well as the high-anomaly catalog used in the paper ([`anomaly_catalog_hsc_disc3sig.p`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/anomaly_catalog_hsc_disc3sig.p)).
 The high-anomaly selection is based on a discriminator score greater than 3 sigma above the mean (discriminator_score_normalized > 3).
 For both of these, the columns are: `[idx,HSC_object_id,ra,dec,discriminator_score_normalized,generator_score_normalized,combined_score_normalized]`.
 
 We also provide the full result catalogs, which include the original images, the GAN reconstructions, and the residuals. 
-These are larger, and can be downloadd from Google Drive at this link: `https://drive.google.com/drive/folders/1jPR7Quv_KCT_fJ1sCpny6YKF3T9cAUaa?usp=sharing`. 
+These are larger, and can be downloadd from Google Drive at [this link](https://drive.google.com/drive/folders/1jPR7Quv_KCT_fJ1sCpny6YKF3T9cAUaa?usp=sharing). 
 The high-anomaly catalog (`results_gri_lambda0.3_3sigd.h5`) is 1.1GB and can be downloaded with (on the command line):
 ```
 wget --no-check-certificate -r 'https://docs.google.com/uc?export=download&id=1mYh0GqNxca2sIuyqk4Q8H3aQGy4nh738' -O 'results_gri_lambda0.3_3sigd.h5'
@@ -53,7 +53,7 @@ These have the following columns: `['anomaly_scores', 'anomaly_scores_sigma', 'd
 (Note that `disc_scores_sigma` are the same as `discriminator_score_normalized` in the pickle files, and similar for the other score definitions.
 
 The results of the convolutional autoencoder (CAE) on the high-anomaly sample are also provided, in this repo in the [`anomaly_catalogs`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs) subfolder.
-This includes the CAE results on the residuals between the real and reconstructed images ([`autoencoded_disc3sigma_residuals.npy`]((https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/autoencoded_disc3sigma_residuals.npy)) as well on the real images for comparison ([`autoencoded_disc3sigma_reals.npy`]((https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/autoencoded_disc3sigma_reals.npy)).
+This includes the CAE results on the residuals between the real and reconstructed images ([`autoencoded_disc3sigma_residuals.npy`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/autoencoded_disc3sigma_residuals.npy)) as well on the real images for comparison ([`autoencoded_disc3sigma_reals.npy`](https://github.com/kstoreyf/anomalies-GAN-HSC/tree/master/anomaly_catalogs/autoencoded_disc3sigma_reals.npy)).
 These contain the 64-dimensional latent-space representations, the image indices (idxs), and normalized discriminator scores.
 
 
