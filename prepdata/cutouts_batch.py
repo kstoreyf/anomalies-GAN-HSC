@@ -3,7 +3,8 @@
 # * Creation Date : 2019-07-23
 # * Created By : kstoreyf
 # * Description : Get a batch of cutouts from the HSC
-# *    database. based off of https://github.com/cbottrell/SubaruHSC_TidalCNN/blob/master/batch_download.py
+# *    database. based off of the script:
+# https://github.com/cbottrell/SubaruHSC_TidalCNN/blob/master/batch_download.py
 # **************************************************
 
 import os

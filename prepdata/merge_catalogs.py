@@ -1,6 +1,6 @@
 # **************************************************
-# * File Name : clean_catalog.py
-# * Creation Date : 2019-08-12
+# * File Name : merge_catalogs.py
+# * Creation Date :
 # * Created By : kstoreyf
 # * Description :
 # **************************************************
