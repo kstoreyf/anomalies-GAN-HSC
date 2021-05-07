@@ -54,7 +54,7 @@ def main():
     plot_fn = f'{plot_dir}/umap_{mode}_{tag}{savetag}.png'
     
     if mode=='auto':
-        values, idxs, scores = utils.get_autoencoded(auto_fn, n_anoms=n_anoms, sigma=sigma)
+        values, idxs, scores = utils.get_autoencoded(auto_fn)
     else:
         res = h5py.File(results_fn, 'r')
         values = res[mode][:]

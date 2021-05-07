@@ -68,25 +68,11 @@ def get_residuals(reals, recons):
     return resids
 
 
-def get_autoencoded(auto_fn, n_anoms=0, sigma=0):
+def get_autoencoded(auto_fn):
     auto = np.load(auto_fn, allow_pickle=True)
     latents = auto[:,0]
     idxs = auto[:,1]
     scores = auto[:,2]
-    if sigma>0:
-        mean = np.mean(scores)
-        std = np.std(scores)
-        n_anoms = len([s for s in scores if s>mean+sigma*std])
-        print(f"Number of {sigma}-sigma anomalies: {n_anoms}")
-        if n_anoms==0:
-            raise ValueError(f"No {sigma}-sigma anomalies")
-    
-    if n_anoms>0:
-        idx_sorted = np.argsort(scores)
-        sample = list(idx_sorted[-n_anoms:])
-        latents = [latents[s] for s in sample]
-        idxs = [idxs[s] for s in sample]
-        scores = [scores[s] for s in sample]
     if type(latents) is not list:
         latents = latents.tolist()
     return latents, idxs, scores
