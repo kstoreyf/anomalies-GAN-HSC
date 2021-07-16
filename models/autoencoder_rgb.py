@@ -34,20 +34,23 @@ DIM = 64 #dimension of autoencoder convolutions
 NSIDE = 96
 NBANDS = 3
 IMAGE_DIM = NSIDE*NSIDE*NBANDS
-BATCH_SIZE = 30
-ITERS = 30500 # How many generator iterations to train for
-SAMPLE_ITERS = 500 # Multiples at which to generate image sample
-SAVE_ITERS = 500 # Multiples at which to save the autoencoder state
+BATCH_SIZE = 30 #prev: 30
+ITERS = 31000 # How many generator iterations to train for
+SAMPLE_ITERS = 1000 # Multiples at which to generate image sample
+SAVE_ITERS = 1000 # Multiples at which to save the autoencoder state
 overwrite = True
 LATENT_DIM = 64
 
 
-imtag = 'gri_lambda0.3_3sigd'
-tag = 'gri_lambda0.3_3sigd'
+#imtag = 'gri'
+#tag = 'gri_lambda0.3'
+imtag = 'gri_1k'
+tag = 'gri_1k_lambda0.3'
 base_dir = '/scratch/ksf293/anomalies'
 results_fn = f'{base_dir}/results/results_{tag}.h5'
 imarr_fn = f'{base_dir}/data/images_h5/images_{imtag}.h5'
-mode = "reals" # one of: ['reals', 'residuals', 'disc_features_real']
+mode = 'reals' # one of: ['reals', 'residuals', 'disc_features_real']
+#mode = 'residuals'
 
 if 'disc' in mode:
     NSIDE = 6
@@ -57,7 +60,7 @@ if 'disc' in mode:
 else:
     save_ims = True
 
-savetag = f'_latent{LATENT_DIM}_{mode}_long'
+savetag = f'_latent{LATENT_DIM}_{mode}_long_lr1e-4'
 
 out_dir = f'{base_dir}/training_output/autoencoder_training/autoencoder_{tag}{savetag}/'
 loss_fn = f'{out_dir}loss.txt'
@@ -128,13 +131,15 @@ t_vars = tf.trainable_variables()
 params = [var for var in t_vars if 'AutoEncoder' in var.name]
 
 ae_optimizer = tf.train.AdamOptimizer(
-        learning_rate=1e-3
+        learning_rate=1e-4
     ).minimize(loss, var_list=params)
 
 # Load data
 print("Loading data")
 data = lib.datautils.load(results_fn, dataset=mode)
 
+# Luptonize false because we are pulling from results, where we already luptonized 'reals'!
+# normalize is some old arcsinh norm, irrelevant
 data_gen = lib.datautils.DataGenerator(data, batch_size=BATCH_SIZE, luptonize=False, normalize=False, smooth=False)
 fixed_im, _ = data_gen.sample(128)
 

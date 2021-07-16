@@ -29,13 +29,13 @@ BATCH_SIZE = 1000
 decode_latent = False
 startcount = 0
 
-#tag = 'gri_lambda0.3'
+tag = 'gri_lambda0.3'
 #tag = 'gri_100k_lambda0.3'
-tag = 'gri_lambda0.3_3sigd'
+#tag = 'gri_lambda0.3_3sigd'
 #aenum = 29500
 aenum = 30000
-#mode = 'residuals'
-mode = 'reals'
+mode = 'residuals'
+#mode = 'reals'
 #aetag = f'_latent32_{mode}'
 aetag = f'_latent64_{mode}_long'
 #aetag = '_aetest'
