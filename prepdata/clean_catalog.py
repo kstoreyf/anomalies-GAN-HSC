@@ -32,7 +32,6 @@ def clean_data(data):
         for b in range(len(bands)):
             flag = '{}_{}'.format(bands[b], badflags[i])
             data = data[data[flag]==0]
-    #data = data[data['reliable']!=1]
     end = time.time()
     print(f"Cleaned catalog: {len(data)} objects")
     print('Time clean:',end-start)
