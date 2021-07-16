@@ -16,8 +16,8 @@ def main():
   
     imtag_orig = 'gri'
     restag_orig = 'gri_lambda0.3'
-    imtag_new = 'gri_lambda0.3_control'
-    restag_new = 'gri_lambda0.3_control' 
+    imtag_new = 'gri_lambda0.3_control_1k'
+    restag_new = 'gri_lambda0.3_control_1k' 
 
     start = time.time()
 
@@ -32,15 +32,15 @@ def main():
     print("Loading results")
     res_orig = h5py.File(res_fn_orig, "r")
     print("Get sigma anomaly scores")
-    gen_scores_sigma = res_orig['gen_scores_sigma'][:]
     disc_scores_sigma = res_orig['disc_scores_sigma'][:]
     res_orig.close()
 
-    # choose opposite of 1.5sigdisc sample, and both scores above -1sigma
+    # choose above -1 disc sigma (because bottom tail too boring)
+    # and below 1.5 disc (that's the high-anomaly sample)
     # randomly choose 20k of these
-    N = 20000
-    locs_new = np.where((disc_scores_sigma > -1) & (gen_scores_sigma > -1) \
-                     & ((disc_scores_sigma < gen_scores_sigma) | (disc_scores_sigma < 1.5)))[0]
+    #N = 20000
+    N = 1000
+    locs_new = np.where((disc_scores_sigma > -1) & (disc_scores_sigma < 1.5))[0]
     np.random.seed(42)
     locs_new = np.random.choice(locs_new, N, replace=False)
     print("N_sample:", len(locs_new))

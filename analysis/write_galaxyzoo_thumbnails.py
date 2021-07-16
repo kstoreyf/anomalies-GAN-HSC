@@ -16,8 +16,8 @@ import tarfile
 def main():
 
     #tag = 'gri_lambda0.3_3sigdisc'
-    tag = 'gri_lambda0.3_1.5sigdisc'
-    #tag = 'gri_lambda0.3_control'
+    #tag = 'gri_lambda0.3_1.5sigd'
+    tag = 'gri_lambda0.3_control'
     #tag = 'gri_1k_lambda0.3'
 
     base_dir = '/scratch/ksf293/anomalies'
@@ -31,8 +31,8 @@ def main():
     results_fn = f'{base_dir}/results/results_{tag}.h5'
     res = h5py.File(results_fn, 'r')
 
-    #write_thumbnails(res, thumb_dir)
-    #tar_thumbnails(tar_filename, thumb_dir)
+    write_thumbnails(res, thumb_dir)
+    tar_thumbnails(tar_filename, thumb_dir)
     write_info_file(res, tag)
 
     res.close()
@@ -76,7 +76,7 @@ def write_info_file(res, tag):
     score_df = pd.DataFrame(data=score_data, index=idxs, columns=score_names)
     score_df.index.name = 'idx'
 
-    info_fn = '../data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
+    info_fn = '/scratch/ksf293/anomalies/data/hsc_catalogs/pdr2_wide_icmod_20.0-20.5_clean_more.csv'
     print("Reading in info file {}".format(info_fn))
     info_df = pd.read_csv(info_fn, usecols=['idx', 'object_id', 'ra_x', 'dec_x'], squeeze=True)
     info_df = info_df.set_index('idx')

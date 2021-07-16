@@ -305,7 +305,7 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
 def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None,
               highlight_markers=None, cmap='plasma_r', boxes=None, box_colors=None,
               box_labels=None, figsize=(8,7), colorby=None, vmin=None, vmax=None, 
-              alpha=0.2, s=6, xlim=None, ylim=None, show_axes=False):
+              alpha=0.2, s=6, xlim=None, ylim=None, show_axes=False, bigfont=False):
     e1, e2, cby, idxs = embedding
     if colorby is None:
         colorby = cby
@@ -351,7 +351,10 @@ def plot_umap(embedding, saveto=None, highlight_arrs=None, highlight_colors=None
     plt.ylim(ylim)
 
     cbar = plt.colorbar(extend='max')
-    cbar.set_label(r'$s_\mathrm{disc}$, discriminator score', rotation=270, labelpad=18)
+    labelpad = 18
+    if bigfont:
+        labelpad +=6
+    cbar.set_label(r'$s_\mathrm{disc}$, discriminator score', rotation=270, labelpad=labelpad)
     cbar.set_alpha(1)
     cbar.draw_all()
 
@@ -409,15 +412,18 @@ def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=N
         ax0 = axarr[0][i]
         ax1 = axarr[1][i]
         ax2 = axarr[2][i]
-        title = r'''ID: {}
-{} = {:.2f}$\sigma$'''.format(obj_id, score_label, score)
-        ax0.set_title(title, fontsize=8)
+        matplotlib.rc('text', usetex=True)
+        ax0.text(96/2, -24, f"ID {obj_id}", ha='center', fontsize=10.5)
+        ax0.text(96/2, -8, fr"{score_label} = {score:.2f}$\sigma$", ha='center', fontsize=14)#16)
+        #title = r'''\fontsize{9pt}{ID {}}
+#\fontsize{15pt}{{} = {:.2f}$\sigma$}'''.format(obj_id, score_label, score)
+        #ax0.set_title(title, fontsize=10)
         ax0.imshow(im)
         ax1.imshow(recon)
         ax2.imshow(resid)
         
         if i==0:
-            fsize=13
+            fsize=15
             ax0.set_ylabel("real",fontsize=fsize)
             ax1.set_ylabel("reconstructed",fontsize=fsize)
             ax2.set_ylabel("residual",fontsize=fsize)
@@ -436,8 +442,8 @@ def plot_recons(ids, imtag, restag, resdicttag=None, saveto=None, border_color=N
 
 def plot_anomaly_dist(sanoms, gens, discs, title=None, saveto=None):
     
-    print(min(gens), max(gens), np.mean(gens), np.std(gens))
-    print(min(discs), max(discs), np.mean(discs), np.std(discs))
+    #print(min(gens), max(gens), np.mean(gens), np.std(gens))
+    #print(min(discs), max(discs), np.mean(discs), np.std(discs))
 
     minmin = min(min(gens), min(discs))
     maxmax = max(max(gens), max(discs))
@@ -449,7 +455,7 @@ def plot_anomaly_dist(sanoms, gens, discs, title=None, saveto=None):
     fig.suptitle(title)
 
     ax0 = axarr[0]
-    b = ax0.hist(sanoms, bins=bins, alpha=1, color='purple', label='total \nscore $(s_\mathrm{anom})$', histtype='step', lw=1.5)
+    b = ax0.hist(sanoms, bins=bins, alpha=1, color='purple', label='total \nscore $(s_\mathrm{WGAN})$', histtype='step', lw=1.5)
     b = ax0.hist(gens, bins=bins, alpha=1, color='blue', ls=':', label='generator \nscore $(s_\mathrm{gen})$', histtype='step', lw=1.5)
     b = ax0.hist(discs, bins=bins, alpha=1, color='red', ls='--', label='discriminator \nscore $(s_\mathrm{disc})$', histtype='step', lw=1.5)
 
@@ -477,11 +483,11 @@ def plot_anomaly_dist(sanoms, gens, discs, title=None, saveto=None):
     ax1 = axarr[1]
     scat = ax1.scatter(gens, discs, s=1, c=sanoms, alpha=0.2, cmap='plasma_r', vmin=-2, vmax=5)
     cbar = fig.colorbar(scat, extend='max', ax=ax1)
-    cbar.set_label(r'$s_\mathrm{anom}$ ($\sigma$)', rotation=270, labelpad=8)
+    cbar.set_label(r'$s_\mathrm{WGAN}$ ($\sigma$)', rotation=270, labelpad=8)
     cbar.set_alpha(1)
     cbar.draw_all()
    
-    smin, smax = -5, 15 
+    smin, smax = -5, 15
     xx = np.linspace(smin,smax,2)
     ax1.plot(xx, xx, color='k', ls='--', lw=0.5)
     #lambda_weight = 0.5
@@ -498,7 +504,6 @@ def plot_anomaly_dist(sanoms, gens, discs, title=None, saveto=None):
     ax1.set_yticks(ticks)
     ax1.set_aspect('equal', adjustable='box')
 
-    plt.show()    
     if saveto:
         plt.savefig(saveto, bbox_inches='tight')
 

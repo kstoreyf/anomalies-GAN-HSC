@@ -21,10 +21,10 @@ def main():
     hf_fns = []
     #restags = ['gri_lambda0.3_control']#, 'gri_lambda0.3']
     #restags = ['gri_100k_lambda0.3']
-    imtags = ['gri_3sig']
+    #imtags = ['gri_3sig']
     #hf_fns += [f'{base_dir}/results/results_{tag}.h5' for tag in restags]
     #hf_fns += glob.glob(f'{base_dir}/results/results_*.h5')
-    hf_fns += glob.glob(f'{base_dir}/results/results_ae_gri_lambda0.3_model*.h5')
+    hf_fns += glob.glob(f'{base_dir}/results/results_aefull_*.h5')
     #hf_fns += [f'{base_dir}/data/images_h5/images_{tag}.h5' for tag in imtags]
     #hf_fns += glob.glob(f'{base_dir}/data/images_h5/images_*.h5')
     print(hf_fns)
@@ -67,8 +67,6 @@ def check_objids(hf_fn, info_df, base_dir='/scratch/ksf293/anomalies', fix=False
         else:
             object_ids_hf = [object_ids_hf.astype(np.uint64) for objid in object_ids_hf]
 
-    print("Fixed!")
-    print("Checking against info_df object IDs")
     object_ids_info = np.array([info_df['object_id'].loc[idx].astype(np.uint64) for idx in idxs_hf])
 
     try:
@@ -84,9 +82,13 @@ def check_objids(hf_fn, info_df, base_dir='/scratch/ksf293/anomalies', fix=False
 
 def fix_object_ids(hf, object_ids_correct):
     print("Fixing object ids")
+    n_data = len(hf['object_ids'])
     if "object_ids" in hf.keys():
         del hf["object_ids"]
-    hf.create_dataset("object_ids", data=object_ids_correct, dtype='uint64')
+    hf.create_dataset("object_ids", (n_data,), chunks=(1,), dtype='uint64')
+    for i in range(n_data):
+        hf['object_ids'][i] = object_ids_correct[i]
+    return hf['object_ids']
 
 def fix_idx_type(hf, idxs_hf):
     print("Fixing idx type")
@@ -97,11 +99,16 @@ def fix_idx_type(hf, idxs_hf):
 
 def fix_object_id_type(hf, object_ids_hf):
     print("Fixing object_id type")
-    object_ids_correct = [object_ids_hf.astype(np.uint64) for objid in object_ids_hf]
+    #object_ids_correct = [object_ids_hf.astype(np.uint64) for objid in object_ids_hf]
+    n_data = len(hf['object_ids'])
+    print("Creating new dataset")
     if "object_ids" in hf.keys():
         del hf['object_ids']
-    hf.create_dataset("object_ids", data=object_ids_correct, dtype='uint64')
-    return object_ids_correct
+    hf.create_dataset("object_ids", (n_data,), chunks=(1,), dtype='uint64')
+    for i in range(n_data):
+        object_id_correct = object_ids_hf[i].astype(np.uint64)
+        hf['object_ids'][i] = object_id_correct
+    return
 
 if __name__=='__main__':
     main()

@@ -15,9 +15,9 @@ import time
 def main():
   
     imtag_orig = 'gri'
-    imtag_new = 'gri_lambda0.3_3sigd'
+    imtag_new = 'gri_lambda0.3_1.5sigd'
     restag_orig = 'gri_lambda0.3'
-    restag_new = 'gri_lambda0.3_3sigd'
+    restag_new = 'gri_lambda0.3_1.5sigd'
 
     start = time.time()
 
@@ -32,13 +32,12 @@ def main():
     print("Loading results")
     res_orig = h5py.File(res_fn_orig, "r")
     print("Get sigma anomaly scores")
-    gen_scores_sigma = res_orig['gen_scores_sigma'][:]
     disc_scores_sigma = res_orig['disc_scores_sigma'][:]
     res_orig.close()
 
-    # choose objects with high disc score AND low gen score
-    #thresh = 1.5 #sigma
-    thresh = 3 #sigma
+    # choose objects with high disc score
+    thresh = 1.5 #sigma
+    #thresh = 3 #sigma
     locs_new = np.where((disc_scores_sigma>thresh))[0]
 
     subsample_file(imarr_fn_orig, imarr_fn_new, locs_new)
