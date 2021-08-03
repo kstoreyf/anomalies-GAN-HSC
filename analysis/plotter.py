@@ -245,7 +245,6 @@ def plot_ims(ids, nrows, ncols, imtag='gri', saveto=None, headers=None,
     elif hspace is None and score_name == None:
         hspace=0.2
         wspace=0.05
-    print(hspace,wspace)
     plt.subplots_adjust(hspace=hspace, wspace=wspace)
     plt.rc('text', usetex=True)
     
